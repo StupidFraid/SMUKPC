@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+
+<head>
+    <title>Реестр — СМУК ПК</title>
+</head>
+
+<body>
+    <div layout:fragment="content">
+        <!-- Page Header -->
+        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+            <h1 class="h2">Реестр</h1>
+            <div class="btn-toolbar mb-2 mb-md-0">
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-download me-1"></i> Экспорт
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><h6 class="dropdown-header">Оборудование</h6></li>
+                        <li><a class="dropdown-item" href="/inventory/export/hardware/excel">
+                            <i class="bi bi-file-earmark-excel text-success me-2"></i>Excel (.xlsx)</a></li>
+                        <li><a class="dropdown-item" href="/inventory/export/hardware/pdf">
+                            <i class="bi bi-file-earmark-pdf text-danger me-2"></i>PDF</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><h6 class="dropdown-header">Программное обеспечение</h6></li>
+                        <li><a class="dropdown-item" href="/inventory/export/software/excel">
+                            <i class="bi bi-file-earmark-excel text-success me-2"></i>Excel (.xlsx)</a></li>
+                        <li><a class="dropdown-item" href="/inventory/export/software/pdf">
+                            <i class="bi bi-file-earmark-pdf text-danger me-2"></i>PDF</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <ul class="nav nav-tabs mb-3" id="inventoryTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="hardware-tab" data-bs-toggle="tab" data-bs-target="#hardware"
+                        type="button" role="tab">
+                    <i class="bi bi-pc-display me-1"></i> Оборудование
+                    <span class="badge bg-primary ms-1" th:text="${#lists.size(hosts)}">0</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="software-tab" data-bs-toggle="tab" data-bs-target="#software"
+                        type="button" role="tab">
+                    <i class="bi bi-box-seam me-1"></i> Программное обеспечение
+                    <span class="badge bg-primary ms-1" th:text="${#lists.size(softwareList)}">0</span>
+                </button>
+            </li>
+        </ul>
+
+        <!-- Tab Content -->
+        <div class="tab-content" id="inventoryTabsContent">
+
+            <!-- Hardware Tab -->
+            <div class="tab-pane fade show active" id="hardware" role="tabpanel">
+                <!-- Filters -->
+                <div class="card shadow-sm mb-3">
+                    <div class="card-body py-2">
+                        <div class="row g-2 align-items-center">
+                            <div class="col-md-5">
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                    <input type="text" class="form-control" id="hwSearch"
+                                           placeholder="Поиск по имени, процессору, видеокарте..." onkeyup="filterHardwareTable()">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <select class="form-select" id="hwGroupFilter" onchange="filterHardwareTable()">
+                                    <option value="">Все группы</option>
+                                    <option th:each="g : ${groups}" th:value="${g.name}" th:text="${g.name}">Группа</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <select class="form-select" id="hwStatusFilter" onchange="filterHardwareTable()">
+                                    <option value="">Все статусы</option>
+                                    <option value="ONLINE">Онлайн</option>
+                                    <option value="OFFLINE">Оффлайн</option>
+                                    <option value="ERROR">Ошибка</option>
+                                    <option value="CHANGED">С изменениями</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2 text-end">
+                                <span class="text-muted" id="hwCount">
+                                    Показано: <strong th:text="${#lists.size(hosts)}">0</strong>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hardware Table -->
+                <div class="card shadow-sm">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0" id="hwTable">
+                            <thead>
+                                <tr>
+                                    <th class="sortable" onclick="sortTable('hwTable', 0)" style="cursor:pointer;">
+                                        Имя ПК <i class="bi bi-chevron-expand text-muted"></i>
+                                    </th>
+                                    <th class="sortable" onclick="sortTable('hwTable', 1)" style="cursor:pointer;">
+                                        Группа <i class="bi bi-chevron-expand text-muted"></i>
+                                    </th>
+                                    <th class="sortable" onclick="sortTable('hwTable', 2)" style="cursor:pointer;">
+                                        Мат. плата <i class="bi bi-chevron-expand text-muted"></i>
+                                    </th>
+                                    <th class="sortable" onclick="sortTable('hwTable', 3)" style="cursor:pointer;">
+                                        Процессор <i class="bi bi-chevron-expand text-muted"></i>
+                                    </th>
+                                    <th class="sortable" onclick="sortTable('hwTable', 4)" style="cursor:pointer;">
+                                        RAM <i class="bi bi-chevron-expand text-muted"></i>
+                                    </th>
+                                    <th class="sortable" onclick="sortTable('hwTable', 5)" style="cursor:pointer;">
+                                        Видеокарта <i class="bi bi-chevron-expand text-muted"></i>
+                                    </th>
+                                    <th>Статус</th>
+                                    <th class="sortable" onclick="sortTable('hwTable', 7)" style="cursor:pointer;">
+                                        Последняя синхр. <i class="bi bi-chevron-expand text-muted"></i>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="host : ${hosts}" class="hw-row"
+                                    th:data-groups="${host.groupIdsString}"
+                                    th:data-group-names="${host.groupNamesString}"
+                                    th:data-status="${host.syncError != null ? 'ERROR' : (host.online ? 'ONLINE' : 'OFFLINE')}"
+                                    th:data-changed="${changedHostIds.contains(host.id) ? 'true' : 'false'}"
+                                    style="cursor:pointer;"
+                                    th:onclick="'window.location.href=\'/hosts/' + ${host.id} + '\''">
+                                    <td>
+                                        <i class="bi bi-pc-display me-1 text-primary"></i>
+                                        <strong th:text="${host.displayName}">PC-001</strong>
+                                        <span th:if="${host.alias != null and !host.alias.isEmpty()}" class="text-muted small ms-1"
+                                              th:text="'(' + ${host.computerName} + ')'"></span>
+                                    </td>
+                                    <td>
+                                        <span th:if="${host.groups.isEmpty()}" class="text-muted small">—</span>
+                                        <span th:each="g : ${host.groups}" class="badge bg-secondary me-1" th:text="${g.name}">Группа</span>
+                                    </td>
+                                    <td class="small" th:text="${host.motherboard ?: '—'}">MB</td>
+                                    <td class="small" th:text="${host.cpuModel ?: '—'}">Intel Core i7</td>
+                                    <td th:text="${host.formattedRam}">16 GB</td>
+                                    <td class="small" th:text="${host.videoAdapter ?: '—'}">GPU</td>
+                                    <td>
+                                        <span th:if="${host.syncError != null}" class="badge bg-danger"
+                                              th:title="${host.syncError}">Ошибка</span>
+                                        <span th:if="${host.syncError == null}" class="badge"
+                                              th:classappend="${host.online ? 'bg-success' : 'bg-secondary'}"
+                                              th:text="${host.online ? 'Онлайн' : 'Оффлайн'}">Статус</span>
+                                        <span th:if="${changedHostIds.contains(host.id)}" class="badge bg-warning text-dark ms-1"
+                                              title="Есть неподтверждённые изменения">Изм.</span>
+                                    </td>
+                                    <td class="text-muted small text-nowrap"
+                                        th:text="${host.lastSyncAt != null ? #temporals.format(host.lastSyncAt, 'dd.MM.yyyy HH:mm') : '—'}">—</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Software Tab -->
+            <div class="tab-pane fade" id="software" role="tabpanel">
+                <!-- Search -->
+                <div class="card shadow-sm mb-3">
+                    <div class="card-body py-2">
+                        <div class="row g-2 align-items-center">
+                            <div class="col-md-8">
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                    <input type="text" class="form-control" id="swSearch"
+                                           placeholder="Поиск по названию ПО или издателю..." onkeyup="filterSoftwareTable()">
+                                </div>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <span class="text-muted" id="swCount">
+                                    Всего: <strong th:text="${#lists.size(softwareList)}">0</strong> программ
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div th:if="${#lists.isEmpty(softwareList)}" class="alert alert-info">
+                    <i class="bi bi-info-circle me-1"></i> Список ПО пуст. Дождитесь синхронизации хостов.
+                </div>
+
+                <!-- Software Table -->
+                <div th:unless="${#lists.isEmpty(softwareList)}" class="card shadow-sm">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0" id="swTable">
+                            <thead>
+                                <tr>
+                                    <th class="sortable" onclick="sortTable('swTable', 0)" style="cursor:pointer;">
+                                        Программа <i class="bi bi-chevron-expand text-muted"></i>
+                                    </th>
+                                    <th class="sortable" onclick="sortTable('swTable', 1)" style="cursor:pointer;">
+                                        Издатель <i class="bi bi-chevron-expand text-muted"></i>
+                                    </th>
+                                    <th class="sortable" onclick="sortTable('swTable', 2)" style="cursor:pointer;">
+                                        Установлено на ПК <i class="bi bi-chevron-expand text-muted"></i>
+                                    </th>
+                                    <th sec:authorize="hasRole('ADMIN')" style="width: 80px;" title="Отслеживание изменений">Отсл.</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- sw[0]=name, sw[1]=publisher, sw[2]=hostCount -->
+                                <tr th:each="sw : ${softwareList}" class="sw-row"
+                                    th:data-name="${sw[0]}">
+                                    <td style="cursor:pointer;" onclick="window.location.href='/inventory/software?name=' + encodeURIComponent(this.parentElement.getAttribute('data-name'))">
+                                        <i class="bi bi-box me-1 text-primary"></i>
+                                        <strong th:text="${sw[0]}">Program</strong>
+                                    </td>
+                                    <td class="text-muted" style="cursor:pointer;" onclick="window.location.href='/inventory/software?name=' + encodeURIComponent(this.parentElement.getAttribute('data-name'))" th:text="${sw[1] ?: '—'}">Publisher</td>
+                                    <td style="cursor:pointer;" onclick="window.location.href='/inventory/software?name=' + encodeURIComponent(this.parentElement.getAttribute('data-name'))">
+                                        <span class="badge bg-primary" th:text="${sw[2]}">1</span>
+                                    </td>
+                                    <td sec:authorize="hasRole('ADMIN')" class="text-center" onclick="event.stopPropagation()">
+                                        <div class="form-check form-switch d-inline-block mb-0">
+                                            <input class="form-check-input sw-tracking-toggle" type="checkbox"
+                                                   th:data-name="${sw[0]}"
+                                                   th:checked="${!excludedSoftwareNames.contains(sw[0])}">
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            /* ===== Сортировка таблиц ===== */
+            var sortDirections = {};
+
+            function sortTable(tableId, colIndex) {
+                var table = document.getElementById(tableId);
+                var tbody = table.querySelector('tbody');
+                var rows = Array.from(tbody.querySelectorAll('tr'));
+                var key = tableId + '_' + colIndex;
+
+                sortDirections[key] = !sortDirections[key];
+                var asc = sortDirections[key];
+
+                rows.sort(function(a, b) {
+                    var aText = a.cells[colIndex].textContent.trim();
+                    var bText = b.cells[colIndex].textContent.trim();
+
+                    var aNum = parseFloat(aText.replace(/[^\d.-]/g, ''));
+                    var bNum = parseFloat(bText.replace(/[^\d.-]/g, ''));
+                    if (!isNaN(aNum) && !isNaN(bNum)) {
+                        return asc ? aNum - bNum : bNum - aNum;
+                    }
+
+                    return asc ? aText.localeCompare(bText, 'ru') : bText.localeCompare(aText, 'ru');
+                });
+
+                rows.forEach(function(row) { tbody.appendChild(row); });
+
+                var headers = table.querySelectorAll('thead th');
+                headers.forEach(function(th, i) {
+                    var icon = th.querySelector('i');
+                    if (icon) {
+                        if (i === colIndex) {
+                            icon.className = asc ? 'bi bi-chevron-up text-primary' : 'bi bi-chevron-down text-primary';
+                        } else {
+                            icon.className = 'bi bi-chevron-expand text-muted';
+                        }
+                    }
+                });
+            }
+
+            /* ===== Фильтрация таблицы оборудования ===== */
+            function filterHardwareTable() {
+                var search = document.getElementById('hwSearch').value.toLowerCase();
+                var group = document.getElementById('hwGroupFilter').value;
+                var status = document.getElementById('hwStatusFilter').value;
+                var rows = document.querySelectorAll('.hw-row');
+                var visible = 0;
+
+                rows.forEach(function(row) {
+                    var text = row.textContent.toLowerCase();
+                    var rowGroupNames = row.getAttribute('data-group-names') || '';
+                    var rowStatus = row.getAttribute('data-status');
+                    var rowChanged = row.getAttribute('data-changed');
+
+                    var matchSearch = !search || text.indexOf(search) > -1;
+                    var matchGroup = !group || rowGroupNames.indexOf(group) > -1;
+                    var matchStatus;
+                    if (status === 'CHANGED') {
+                        matchStatus = rowChanged === 'true';
+                    } else {
+                        matchStatus = !status || rowStatus === status;
+                    }
+
+                    var show = matchSearch && matchGroup && matchStatus;
+                    row.style.display = show ? '' : 'none';
+                    if (show) visible++;
+                });
+
+                document.getElementById('hwCount').innerHTML = 'Показано: <strong>' + visible + '</strong>';
+            }
+
+            /* ===== Фильтрация таблицы ПО ===== */
+            function filterSoftwareTable() {
+                var search = document.getElementById('swSearch').value.toLowerCase();
+                var rows = document.querySelectorAll('.sw-row');
+                var visible = 0;
+
+                rows.forEach(function(row) {
+                    var text = row.textContent.toLowerCase();
+                    var show = !search || text.indexOf(search) > -1;
+                    row.style.display = show ? '' : 'none';
+                    if (show) visible++;
+                });
+
+                document.getElementById('swCount').innerHTML = 'Всего: <strong>' + visible + '</strong> программ';
+            }
+
+            // Восстановление активной вкладки
+            (function() {
+                var tab = sessionStorage.getItem('inventoryTab');
+                if (tab === 'software') {
+                    var el = document.getElementById('software-tab');
+                    if (el) { new bootstrap.Tab(el).show(); }
+                    sessionStorage.removeItem('inventoryTab');
+                }
+            })();
+
+            /* ===== Toggle отслеживания ПО (глобальный) ===== */
+            document.querySelectorAll('.sw-tracking-toggle').forEach(function(toggle) {
+                toggle.addEventListener('change', function() {
+                    var name = this.getAttribute('data-name');
+                    var checkbox = this;
+                    var csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+                    var csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+
+                    var headers = {'Content-Type': 'application/x-www-form-urlencoded'};
+                    headers[csrfHeader] = csrfToken;
+
+                    fetch('/inventory/software/toggle-tracking', {
+                        method: 'POST',
+                        headers: headers,
+                        body: 'name=' + encodeURIComponent(name)
+                    })
+                    .then(function(resp) { return resp.json(); })
+                    .then(function(data) {
+                        if (data.success) {
+                            checkbox.checked = data.tracked;
+                        }
+                    })
+                    .catch(function() {
+                        checkbox.checked = !checkbox.checked;
+                    });
+                });
+            });
+        </script>
+    </div>
+</body>
+
+</html>

@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+
+<head>
+    <title>События — СМУК ПК</title>
+</head>
+
+<body>
+    <div layout:fragment="content">
+        <!-- Page Header -->
+        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+            <h1 class="h2">
+                События
+                <span th:if="${unacknowledgedCount > 0}" class="badge bg-warning text-dark fs-6 ms-2"
+                      th:text="${unacknowledgedCount + ' непросмотр.'}">0 непросмотр.</span>
+            </h1>
+            <div class="btn-toolbar mb-2 mb-md-0">
+                <form sec:authorize="hasRole('ADMIN')" th:if="${unacknowledgedCount > 0}" th:action="@{/events/acknowledge-all}" method="post" class="me-2">
+                    <button type="submit" class="btn btn-sm btn-success">
+                        <i class="bi bi-check-all me-1"></i> Подтвердить все
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-body py-2">
+                <form id="filterForm" method="get" action="/events">
+                    <div class="row g-2 align-items-center">
+                        <div class="col-md-2">
+                            <label class="form-label small text-muted mb-0">Дата с</label>
+                            <input type="date" class="form-control form-control-sm" name="dateFrom" id="dateFromInput"
+                                   th:value="${dateFrom}" onchange="document.getElementById('filterForm').submit()">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small text-muted mb-0">Дата по</label>
+                            <input type="date" class="form-control form-control-sm" name="dateTo" id="dateToInput"
+                                   th:value="${dateTo}" onchange="document.getElementById('filterForm').submit()">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small text-muted mb-0">Статус</label>
+                            <select class="form-select form-select-sm" id="statusFilter" onchange="filterEvents()">
+                                <option value="">Все</option>
+                                <option value="unacknowledged">Непросмотренные</option>
+                                <option value="acknowledged">Просмотренные</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small text-muted mb-0">Компонент</label>
+                            <select class="form-select form-select-sm" id="componentFilter" onchange="filterEvents()">
+                                <option value="">Все</option>
+                                <option value="PROCESSOR">Процессор</option>
+                                <option value="MEMORY">Память</option>
+                                <option value="DISK">Диск</option>
+                                <option value="SOFTWARE">ПО</option>
+                                <option value="VIDEO_ADAPTER">Видеоадаптер</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small text-muted mb-0">Тип</label>
+                            <select class="form-select form-select-sm" id="changeTypeFilter" onchange="filterEvents()">
+                                <option value="">Все</option>
+                                <option value="ADDED">Добавлено</option>
+                                <option value="MODIFIED">Изменено</option>
+                                <option value="REMOVED">Удалено</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small text-muted mb-0">Поиск</label>
+                            <input type="text" class="form-control form-control-sm" id="searchInput"
+                                   placeholder="По хосту..." onkeyup="filterEvents()">
+                        </div>
+                    </div>
+                    <div th:if="${dateFrom != null or dateTo != null}" class="mt-2">
+                        <a href="/events" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-x-circle me-1"></i>Сбросить даты
+                        </a>
+                        <span class="text-muted small ms-2" th:text="${#lists.size(events) + ' событий за период'}"></span>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Events Table -->
+        <div class="card shadow-sm">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-journal-text"></i> Журнал изменений</h5>
+                <span class="badge bg-info" th:text="${#lists.size(events) + ' событий'}">0 событий</span>
+            </div>
+            <div class="card-body p-0">
+                <div th:if="${#lists.isEmpty(events)}" class="text-muted text-center p-4">
+                    <i class="bi bi-info-circle"></i> Изменений компонентов не обнаружено.
+                </div>
+
+                <table th:unless="${#lists.isEmpty(events)}" class="table table-hover mb-0" id="eventsTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="cursor:pointer; width: 155px;" onclick="sortTable(0)" class="text-nowrap">
+                                Дата <i class="bi bi-arrow-down-up text-muted small"></i>
+                            </th>
+                            <th style="cursor:pointer" onclick="sortTable(1)">
+                                Хост <i class="bi bi-arrow-down-up text-muted small"></i>
+                            </th>
+                            <th style="cursor:pointer; width: 130px;" onclick="sortTable(2)">
+                                Компонент <i class="bi bi-arrow-down-up text-muted small"></i>
+                            </th>
+                            <th style="width: 110px;">Тип</th>
+                            <th>Старое значение</th>
+                            <th>Новое значение</th>
+                            <th style="width: 170px;">Статус</th>
+                            <th sec:authorize="hasRole('ADMIN')" style="width: 50px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="event : ${events}" class="event-row"
+                            th:data-component="${event.componentType}"
+                            th:data-changetype="${event.changeType}"
+                            th:data-host="${event.host.computerName}"
+                            th:data-acknowledged="${event.acknowledged}"
+                            th:data-date="${#temporals.format(event.detectedAt, 'yyyy-MM-dd HH:mm:ss')}"
+                            th:classappend="${!event.acknowledged ? 'table-warning' : ''}">
+                            <td class="small text-nowrap"
+                                th:text="${#temporals.format(event.detectedAt, 'dd.MM.yyyy HH:mm')}">01.01.2026 12:00</td>
+                            <td>
+                                <a th:href="@{/hosts/{id}(id=${event.host.id})}" class="text-decoration-none">
+                                    <span th:text="${event.host.computerName}">PC-001</span>
+                                </a>
+                            </td>
+                            <td>
+                                <span class="badge"
+                                      th:classappend="${event.componentType == 'PROCESSOR' ? 'bg-primary' :
+                                                       (event.componentType == 'MEMORY' ? 'bg-info' :
+                                                       (event.componentType == 'DISK' ? 'bg-success' :
+                                                       (event.componentType == 'VIDEO_ADAPTER' ? 'bg-dark' :
+                                                       (event.componentType == 'SOFTWARE' ? 'bg-purple' : 'bg-secondary'))))}">
+                                    <span th:text="${event.componentType}">CPU</span>
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge"
+                                      th:classappend="${event.changeType == 'ADDED' ? 'bg-success' :
+                                                       (event.changeType == 'REMOVED' ? 'bg-danger' : 'bg-warning text-dark')}"
+                                      th:text="${event.changeType == 'ADDED' ? 'Добавлено' :
+                                               (event.changeType == 'REMOVED' ? 'Удалено' : 'Изменено')}">Тип</span>
+                            </td>
+                            <td class="small text-muted" th:text="${event.oldValue ?: '—'}">—</td>
+                            <td class="small fw-bold" th:text="${event.newValue ?: '—'}">—</td>
+                            <td>
+                                <span th:if="${event.acknowledged}" class="badge bg-light text-muted"
+                                      th:title="${event.acknowledgedAt != null ? #temporals.format(event.acknowledgedAt, 'dd.MM.yyyy HH:mm') : ''}">
+                                    <i class="bi bi-check-circle"></i>
+                                    <span th:text="${event.acknowledgedBy != null ? event.acknowledgedBy : 'Просмотрено'}">Просмотрено</span>
+                                </span>
+                                <span th:unless="${event.acknowledged}" class="badge bg-warning text-dark">
+                                    <i class="bi bi-exclamation-circle"></i> Новое
+                                </span>
+                            </td>
+                            <td sec:authorize="hasRole('ADMIN')" class="text-center">
+                                <form th:unless="${event.acknowledged}"
+                                      th:action="@{/events/{id}/acknowledge(id=${event.id})}" method="post">
+                                    <button type="submit" class="btn btn-sm btn-outline-success p-0 px-1" title="Подтвердить">
+                                        <i class="bi bi-check-lg"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <script>
+            function filterEvents() {
+                var status = document.getElementById('statusFilter').value;
+                var component = document.getElementById('componentFilter').value;
+                var changeType = document.getElementById('changeTypeFilter').value;
+                var search = document.getElementById('searchInput').value.toLowerCase();
+                var rows = document.querySelectorAll('.event-row');
+
+                rows.forEach(function(row) {
+                    var rowComponent = row.getAttribute('data-component');
+                    var rowChangeType = row.getAttribute('data-changetype');
+                    var rowHost = row.getAttribute('data-host').toLowerCase();
+                    var rowAcknowledged = row.getAttribute('data-acknowledged') === 'true';
+
+                    var matchStatus = !status ||
+                        (status === 'unacknowledged' && !rowAcknowledged) ||
+                        (status === 'acknowledged' && rowAcknowledged);
+                    var matchComponent = !component || rowComponent === component;
+                    var matchChangeType = !changeType || rowChangeType === changeType;
+                    var matchSearch = !search || rowHost.indexOf(search) > -1;
+
+                    row.style.display = (matchStatus && matchComponent && matchChangeType && matchSearch) ? '' : 'none';
+                });
+            }
+
+            var sortDir = {};
+            function sortTable(colIdx) {
+                var table = document.getElementById('eventsTable');
+                var tbody = table.querySelector('tbody');
+                var rows = Array.from(tbody.querySelectorAll('tr'));
+                sortDir[colIdx] = !sortDir[colIdx];
+                var dir = sortDir[colIdx] ? 1 : -1;
+
+                rows.sort(function(a, b) {
+                    var aVal, bVal;
+                    if (colIdx === 0) {
+                        // Сортировка по дате через data-date
+                        aVal = a.getAttribute('data-date');
+                        bVal = b.getAttribute('data-date');
+                    } else {
+                        aVal = a.cells[colIdx].textContent.trim().toLowerCase();
+                        bVal = b.cells[colIdx].textContent.trim().toLowerCase();
+                    }
+                    return aVal < bVal ? -1 * dir : aVal > bVal ? 1 * dir : 0;
+                });
+                rows.forEach(function(row) { tbody.appendChild(row); });
+            }
+        </script>
+    </div>
+</body>
+
+</html>

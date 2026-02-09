@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+
+<head>
+    <title>Устройства — СМУК ПК</title>
+</head>
+
+<body>
+    <div layout:fragment="content">
+        <!-- Page Header -->
+        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+            <h1 class="h2">Устройства</h1>
+            <div class="btn-toolbar mb-2 mb-md-0">
+            </div>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="row g-3 mb-4">
+            <div class="col">
+                <a href="?filter=" class="text-decoration-none">
+                    <div class="card card-stat bg-primary text-white">
+                        <div class="card-body py-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="card-title mb-0">Всего</h6>
+                                    <h3 class="fw-bold mb-0" th:text="${totalHosts}">0</h3>
+                                </div>
+                                <i class="bi bi-pc-display fs-1 opacity-50"></i>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <div class="col">
+                <a href="?filter=ONLINE" class="text-decoration-none">
+                    <div class="card card-stat bg-success text-white">
+                        <div class="card-body py-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="card-title mb-0">Онлайн</h6>
+                                    <h3 class="fw-bold mb-0" th:text="${onlineHosts}">0</h3>
+                                </div>
+                                <i class="bi bi-wifi fs-1 opacity-50"></i>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <div class="col">
+                <a href="?filter=OFFLINE" class="text-decoration-none">
+                    <div class="card card-stat bg-secondary text-white">
+                        <div class="card-body py-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="card-title mb-0">Оффлайн</h6>
+                                    <h3 class="fw-bold mb-0" th:text="${offlineHosts}">0</h3>
+                                </div>
+                                <i class="bi bi-wifi-off fs-1 opacity-50"></i>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <div class="col">
+                <a href="?filter=ERROR" class="text-decoration-none">
+                    <div class="card card-stat bg-danger text-white">
+                        <div class="card-body py-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="card-title mb-0">Ошибки синхр.</h6>
+                                    <h3 class="fw-bold mb-0" th:text="${errorHosts}">0</h3>
+                                </div>
+                                <i class="bi bi-exclamation-triangle fs-1 opacity-50"></i>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <div class="col">
+                <a href="?filter=CHANGED" class="text-decoration-none">
+                    <div class="card card-stat bg-warning text-dark">
+                        <div class="card-body py-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="card-title mb-0">Изменения (24ч)</h6>
+                                    <h3 class="fw-bold mb-0" th:text="${changedHostsCount}">0</h3>
+                                </div>
+                                <i class="bi bi-clock-history fs-1 opacity-50"></i>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <!-- Search -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-body py-2">
+                <div class="row g-2 align-items-center">
+                    <div class="col-md-6">
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-search"></i></span>
+                            <input type="text" class="form-control" id="searchInput"
+                                   placeholder="Поиск по имени, Host ID, ОС, CPU..." onkeyup="filterTable()">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-select" id="statusFilter" onchange="filterTable()">
+                            <option value="">Все статусы</option>
+                            <option value="ONLINE">Онлайн</option>
+                            <option value="OFFLINE">Оффлайн</option>
+                            <option value="ERROR">Ошибка</option>
+                            <option value="CHANGED">С изменениями (24ч)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <select class="form-select" id="osFilter" onchange="filterTable()">
+                            <option value="">Все ОС</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <select class="form-select" id="groupFilter" onchange="filterTable()">
+                            <option value="">Все группы</option>
+                            <option th:each="g : ${groups}" th:value="${g.id}" th:text="${g.name}">Группа</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hosts Table -->
+        <div class="card shadow-sm">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0" id="hostsTable">
+                    <thead>
+                        <tr>
+                            <th style="cursor:pointer" onclick="sortTable(0)">Имя <i class="bi bi-arrow-down-up text-muted small"></i></th>
+                            <th style="cursor:pointer" onclick="sortTable(1)">Host ID <i class="bi bi-arrow-down-up text-muted small"></i></th>
+                            <th style="cursor:pointer" onclick="sortTable(2)">ОС <i class="bi bi-arrow-down-up text-muted small"></i></th>
+                            <th style="cursor:pointer" onclick="sortTable(3)">CPU <i class="bi bi-arrow-down-up text-muted small"></i></th>
+                            <th>Статус</th>
+                            <th style="cursor:pointer" onclick="sortTable(5)">Группа <i class="bi bi-arrow-down-up text-muted small"></i></th>
+                            <th style="cursor:pointer" onclick="sortTable(6)">Последняя синхр. <i class="bi bi-arrow-down-up text-muted small"></i></th>
+                            <th sec:authorize="hasRole('ADMIN')">Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="host : ${hosts}" class="host-row"
+                            th:data-status="${host.syncError != null ? 'ERROR' : (host.online ? 'ONLINE' : 'OFFLINE')}"
+                            th:data-changed="${changedHostIds.contains(host.id) ? 'true' : 'false'}"
+                            th:data-os="${host.osName}"
+                            th:data-groups="${host.groupIdsString}"
+                            style="cursor: pointer;"
+                            th:onclick="'window.location.href=\'/hosts/' + ${host.id} + '\''">
+                            <td>
+                                <i class="bi bi-pc-display me-2 text-primary"></i>
+                                <strong th:text="${host.displayName}">PC-001</strong>
+                                <span th:if="${host.alias != null and !host.alias.isEmpty()}" class="text-muted small ms-1"
+                                      th:text="'(' + ${host.computerName} + ')'"></span>
+                            </td>
+                            <td><code th:text="${host.aspiaHostId}">135</code></td>
+                            <td th:text="${host.osName}">Windows 10 Pro</td>
+                            <td>
+                                <span th:if="${host.cpuModel}" th:text="${host.cpuModel}" class="small">CPU</span>
+                                <span th:unless="${host.cpuModel}" class="text-muted small">—</span>
+                            </td>
+                            <td>
+                                <span th:if="${host.syncError != null}" class="badge bg-danger"
+                                      title="Ошибка синхронизации" th:title="${host.syncError}">Ошибка</span>
+                                <span th:if="${host.syncError == null}" class="badge"
+                                      th:classappend="${host.online ? 'bg-success' : 'bg-secondary'}"
+                                      th:text="${host.online ? 'Онлайн' : 'Оффлайн'}">Статус</span>
+                            </td>
+                            <td class="small">
+                                <span th:if="${host.groups.isEmpty()}" class="text-muted">—</span>
+                                <span th:each="g : ${host.groups}" class="badge bg-info me-1" th:text="${g.name}">Группа</span>
+                            </td>
+                            <td class="text-muted small"
+                                th:text="${host.lastSyncAt != null ? #temporals.format(host.lastSyncAt, 'dd.MM.yyyy HH:mm') : '—'}">—</td>
+                            <td sec:authorize="hasRole('ADMIN')">
+                                <form th:action="@{'/hosts/' + ${host.id} + '/sync'}" method="post"
+                                      style="display:inline" onclick="event.stopPropagation();">
+                                    <button type="submit" class="btn btn-sm btn-outline-primary" title="Синхронизировать">
+                                        <i class="bi bi-arrow-repeat"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <script th:inline="javascript">
+            // Заполнение фильтра ОС из данных таблицы
+            (function() {
+                var osSet = new Set();
+                document.querySelectorAll('.host-row').forEach(function(row) {
+                    var os = row.getAttribute('data-os');
+                    if (os) osSet.add(os);
+                });
+                var select = document.getElementById('osFilter');
+                osSet.forEach(function(os) {
+                    var opt = document.createElement('option');
+                    opt.value = os;
+                    opt.textContent = os;
+                    select.appendChild(opt);
+                });
+
+                // Применяем фильтр из URL
+                var urlFilter = /*[[${filter}]]*/ '';
+                if (urlFilter) {
+                    document.getElementById('statusFilter').value = urlFilter;
+                    filterTable();
+                }
+            })();
+
+            function filterTable() {
+                var search = document.getElementById('searchInput').value.toLowerCase();
+                var status = document.getElementById('statusFilter').value;
+                var os = document.getElementById('osFilter').value;
+                var group = document.getElementById('groupFilter').value;
+                var rows = document.querySelectorAll('.host-row');
+
+                rows.forEach(function(row) {
+                    var text = row.textContent.toLowerCase();
+                    var rowStatus = row.getAttribute('data-status');
+                    var rowChanged = row.getAttribute('data-changed');
+                    var rowOs = row.getAttribute('data-os');
+                    var rowGroups = row.getAttribute('data-groups') || '';
+
+                    var matchSearch = !search || text.indexOf(search) > -1;
+                    var matchStatus;
+                    if (status === 'CHANGED') {
+                        matchStatus = rowChanged === 'true';
+                    } else {
+                        matchStatus = !status || rowStatus === status;
+                    }
+                    var matchOs = !os || rowOs === os;
+                    var matchGroup = !group || rowGroups.split(',').indexOf(group) > -1;
+
+                    row.style.display = (matchSearch && matchStatus && matchOs && matchGroup) ? '' : 'none';
+                });
+            }
+
+            var sortDir = {};
+            function sortTable(colIdx) {
+                var table = document.getElementById('hostsTable');
+                var tbody = table.querySelector('tbody');
+                var rows = Array.from(tbody.querySelectorAll('tr'));
+                sortDir[colIdx] = !sortDir[colIdx];
+                var dir = sortDir[colIdx] ? 1 : -1;
+
+                rows.sort(function(a, b) {
+                    var aText = a.cells[colIdx].textContent.trim().toLowerCase();
+                    var bText = b.cells[colIdx].textContent.trim().toLowerCase();
+                    if (aText < bText) return -1 * dir;
+                    if (aText > bText) return 1 * dir;
+                    return 0;
+                });
+
+                rows.forEach(function(row) { tbody.appendChild(row); });
+            }
+        </script>
+    </div>
+</body>
+
+</html>

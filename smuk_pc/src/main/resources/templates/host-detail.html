@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+
+<head>
+    <title th:text="'Устройство ' + ${host.displayName} + ' — СМУК ПК'">Устройство — СМУК ПК</title>
+</head>
+
+<body>
+    <div layout:fragment="content">
+        <!-- Page Header -->
+        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+            <div>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-1">
+                        <li class="breadcrumb-item"><a href="/hosts">Устройства</a></li>
+                        <li class="breadcrumb-item active" th:text="${host.displayName}">PC-001</li>
+                    </ol>
+                </nav>
+                <h1 class="h2">
+                    <i class="bi bi-pc-display me-2"></i>
+                    <span th:text="${host.displayName}">PC-001</span>
+                    <small th:if="${host.alias != null and !host.alias.isEmpty()}" class="text-muted fs-6"
+                           th:text="'(' + ${host.computerName} + ')'"></small>
+                    <span th:if="${host.syncError != null}" class="badge bg-danger ms-2">Ошибка</span>
+                    <span th:if="${host.syncError == null}" class="badge ms-2"
+                          th:classappend="${host.online ? 'bg-success' : 'bg-secondary'}"
+                          th:text="${host.online ? 'Онлайн' : 'Оффлайн'}">Статус</span>
+                </h1>
+            </div>
+            <div class="btn-toolbar mb-2 mb-md-0">
+                <form sec:authorize="hasRole('ADMIN')" th:action="@{'/hosts/' + ${host.id} + '/sync'}" method="post" class="me-2">
+                    <button type="submit" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-arrow-repeat me-1"></i> Синхронизировать
+                    </button>
+                </form>
+                <div class="dropdown me-2">
+                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-three-dots me-1"></i> Действия
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li sec:authorize="hasRole('ADMIN')">
+                            <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#aliasModal">
+                                <i class="bi bi-pencil me-2 text-info"></i>Псевдоним
+                            </a>
+                        </li>
+                        <li sec:authorize="hasRole('ADMIN')">
+                            <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#credentialsModal">
+                                <i class="bi bi-key me-2 text-warning"></i>Параметры подключения
+                            </a>
+                        </li>
+                        <li sec:authorize="hasRole('ADMIN')">
+                            <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#trackingModal">
+                                <i class="bi bi-sliders me-2 text-primary"></i>Настройки отслеживания
+                            </a>
+                        </li>
+                        <li sec:authorize="hasRole('ADMIN')"><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item" th:href="@{'/hosts/' + ${host.id} + '/export/pdf'}">
+                                <i class="bi bi-file-earmark-pdf me-2 text-danger"></i>Экспорт в PDF
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" th:href="@{'/hosts/' + ${host.id} + '/export/excel'}">
+                                <i class="bi bi-file-earmark-excel me-2 text-success"></i>Экспорт в Excel
+                            </a>
+                        </li>
+                        <li sec:authorize="hasRole('ADMIN')"><hr class="dropdown-divider"></li>
+                        <li sec:authorize="hasRole('ADMIN')">
+                            <a class="dropdown-item text-danger" href="#" data-bs-toggle="modal" data-bs-target="#deleteHostModal">
+                                <i class="bi bi-trash me-2"></i>Удалить хост
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                <a href="/hosts" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-1"></i> Назад
+                </a>
+            </div>
+        </div>
+
+        <!-- Sync Error Alert -->
+        <div th:if="${host.syncError != null}" class="alert alert-danger d-flex align-items-center mb-3" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+            <div>
+                <strong>Ошибка синхронизации:</strong> <span th:text="${host.syncError}"></span>
+                <div th:if="${host.syncError.contains('authentication')}" class="mt-1 small">
+                    Требуется аутентификация. Задайте учётные данные через кнопку
+                    <strong>"Параметры подключения"</strong>.
+                </div>
+            </div>
+        </div>
+
+        <!-- Host Info Summary -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body text-center">
+                        <i class="bi bi-hash fs-1 text-primary"></i>
+                        <h6 class="mt-2 mb-0">Host ID</h6>
+                        <code class="fs-5" th:text="${host.aspiaHostId}">135</code>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body text-center">
+                        <i class="bi bi-windows fs-1 text-info"></i>
+                        <h6 class="mt-2 mb-0">ОС</h6>
+                        <span th:text="${host.osName}">Windows 10 Pro</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body text-center">
+                        <i class="bi bi-hdd-network fs-1 text-success"></i>
+                        <h6 class="mt-2 mb-0">IP-адрес</h6>
+                        <code th:text="${host.ipAddress}">0.0.0.0</code>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body text-center">
+                        <i class="bi bi-clock fs-1 text-warning"></i>
+                        <h6 class="mt-2 mb-0">Последняя синхр.</h6>
+                        <span th:text="${host.lastSyncAt != null ? #temporals.format(host.lastSyncAt, 'dd.MM.yyyy HH:mm') : '—'}">—</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <ul class="nav nav-tabs mb-3" id="hostTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overview"
+                        type="button" role="tab">
+                    <i class="bi bi-info-circle me-1"></i> Обзор
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="hardware-tab" data-bs-toggle="tab" data-bs-target="#hardware"
+                        type="button" role="tab">
+                    <i class="bi bi-cpu me-1"></i> Оборудование
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="software-tab" data-bs-toggle="tab" data-bs-target="#software"
+                        type="button" role="tab">
+                    <i class="bi bi-box-seam me-1"></i> Программы
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="network-tab" data-bs-toggle="tab" data-bs-target="#network"
+                        type="button" role="tab">
+                    <i class="bi bi-ethernet me-1"></i> Сеть
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="changes-tab" data-bs-toggle="tab" data-bs-target="#changes"
+                        type="button" role="tab">
+                    <i class="bi bi-clock-history me-1"></i> Изменения
+                    <span th:if="${unacknowledgedCount > 0}" class="badge bg-warning text-dark ms-1"
+                          th:text="${unacknowledgedCount}">0</span>
+                    <span th:if="${unacknowledgedCount == 0 and hostChanges != null and !hostChanges.isEmpty()}"
+                          class="badge bg-secondary ms-1"
+                          th:text="${#lists.size(hostChanges)}">0</span>
+                </button>
+            </li>
+        </ul>
+
+        <!-- Tab Content -->
+        <div class="tab-content" id="hostTabsContent">
+            <!-- Overview Tab -->
+            <div class="tab-pane fade show active" id="overview" role="tabpanel">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0"><i class="bi bi-info-circle"></i> Основная информация</h5>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-borderless mb-0">
+                            <tbody>
+                                <tr>
+                                    <th class="text-muted" style="width: 200px;">Имя устройства</th>
+                                    <td th:text="${host.computerName}">PC-001</td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted">Host ID (Aspia)</th>
+                                    <td><code th:text="${host.aspiaHostId}">135</code></td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted">IP-адрес</th>
+                                    <td><code th:text="${host.ipAddress}">0.0.0.0</code></td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted">Операционная система</th>
+                                    <td>
+                                        <span th:text="${host.osName}">Windows 10 Pro</span>
+                                        <span th:if="${osInfo != null and osInfo['version'] != null}" class="text-muted small ms-1"
+                                              th:text="'(v' + ${osInfo['version']} + ')'"></span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted">Архитектура</th>
+                                    <td th:text="${host.architecture ?: '—'}">x86_64</td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted">Процессор</th>
+                                    <td th:text="${host.cpuModel ?: '—'}">Intel Core i7</td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted">Оперативная память</th>
+                                    <td th:text="${host.formattedRam}">16 GB</td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted">Объём дисков</th>
+                                    <td th:text="${host.formattedDisk}">500 GB</td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted">Видеоадаптер</th>
+                                    <td th:text="${host.videoAdapter ?: '—'}">NVIDIA GeForce</td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted">Версия агента Aspia</th>
+                                    <td th:text="${host.aspiaVersion ?: '—'}">2.7.0</td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted">Статус</th>
+                                    <td>
+                                        <span th:if="${host.syncError != null}" class="badge bg-danger"
+                                              th:title="${host.syncError}">Ошибка</span>
+                                        <span th:if="${host.syncError == null}" class="badge"
+                                              th:classappend="${host.online ? 'bg-success' : 'bg-secondary'}"
+                                              th:text="${host.online ? 'Онлайн' : 'Оффлайн'}">Статус</span>
+                                        <span th:if="${host.syncError != null}" class="text-danger small ms-2"
+                                              th:text="${host.syncError}"></span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted">Последняя синхронизация</th>
+                                    <td th:text="${host.lastSyncAt != null ? #temporals.format(host.lastSyncAt, 'dd.MM.yyyy HH:mm:ss') : '—'}">—</td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted">Группы</th>
+                                    <td>
+                                        <span th:if="${host.groups.isEmpty()}" class="text-muted">Нет групп</span>
+                                        <span th:each="g : ${host.groups}" class="badge bg-info me-1" th:text="${g.name}">Группа</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted">Отслеживание</th>
+                                    <td>
+                                        <span th:if="${host.hasTrackingOverride()}" class="badge bg-warning text-dark me-1" title="Индивидуальные настройки">Override</span>
+                                        <span th:each="comp : ${effectiveTracked}" class="badge bg-secondary me-1"
+                                              th:text="${comp == 'PROCESSOR' ? 'CPU' : (comp == 'MEMORY' ? 'RAM' : (comp == 'DISK' ? 'HDD' : (comp == 'VIDEO_ADAPTER' ? 'GPU' : 'ПО')))}">X</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hardware Tab -->
+            <div class="tab-pane fade" id="hardware" role="tabpanel">
+                <!-- No config warning -->
+                <div th:if="${host.configJson == null}" class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle me-1"></i> Детальная конфигурация ещё не загружена. Дождитесь полной синхронизации.
+                </div>
+
+                <!-- Motherboard & BIOS -->
+                <div th:if="${motherboard != null and !motherboard.isEmpty()}" class="card shadow-sm mb-3">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0"><i class="bi bi-motherboard"></i> Системная плата и BIOS</h5>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-borderless mb-0">
+                            <tbody>
+                                <tr th:if="${motherboard['manufacturer'] != null}">
+                                    <th class="text-muted" style="width: 200px;">Материнская плата</th>
+                                    <td>
+                                        <span th:text="${motherboard['manufacturer']}">Manufacturer</span>
+                                        <span th:if="${motherboard['model'] != null}" th:text="' ' + ${motherboard['model']}">Model</span>
+                                    </td>
+                                </tr>
+                                <tr th:if="${bios != null and bios['vendor'] != null}">
+                                    <th class="text-muted">BIOS</th>
+                                    <td>
+                                        <span th:text="${bios['vendor']}">Vendor</span>
+                                        <span th:if="${bios['version'] != null}" th:text="' v' + ${bios['version']}">v1.0</span>
+                                        <span th:if="${bios['date'] != null}" class="text-muted small" th:text="' (' + ${bios['date']} + ')'"></span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Processor -->
+                <div th:if="${processor != null and !processor.isEmpty()}" class="card shadow-sm mb-3">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0"><i class="bi bi-cpu"></i> Процессор</h5>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-borderless mb-0">
+                            <tbody>
+                                <tr>
+                                    <th class="text-muted" style="width: 200px;">Модель</th>
+                                    <td th:text="${processor['model'] ?: host.cpuModel ?: '—'}">CPU</td>
+                                </tr>
+                                <tr th:if="${processor['vendor'] != null}">
+                                    <th class="text-muted">Производитель</th>
+                                    <td th:text="${processor['vendor']}">Intel</td>
+                                </tr>
+                                <tr th:if="${processor['cores'] != null}">
+                                    <th class="text-muted">Ядра / Потоки</th>
+                                    <td>
+                                        <span th:text="${processor['cores']}">4</span> ядер /
+                                        <span th:text="${processor['threads']}">8</span> потоков
+                                    </td>
+                                </tr>
+                                <tr th:if="${processor['packages'] != null}">
+                                    <th class="text-muted">Сокетов</th>
+                                    <td th:text="${processor['packages']}">1</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Memory -->
+                <div th:if="${memoryModules != null and !memoryModules.isEmpty()}" class="card shadow-sm mb-3">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="bi bi-memory"></i> Оперативная память</h5>
+                        <span class="badge bg-primary" th:text="${host.formattedRam}">16 GB</span>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Слот</th>
+                                    <th>Производитель</th>
+                                    <th>Объём</th>
+                                    <th>Тип</th>
+                                    <th>Скорость</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="mem : ${memoryModules}">
+                                    <td th:text="${mem['location'] ?: '—'}">DIMM 0</td>
+                                    <td th:text="${mem['manufacturer'] ?: '—'}">Samsung</td>
+                                    <td th:text="${mem['size'] != null ? T(java.lang.String).format('%.1f GB', T(java.lang.Long).parseLong(mem['size'].toString()) / 1073741824.0) : '—'}">8 GB</td>
+                                    <td><span class="badge bg-info" th:text="${mem['type'] ?: '—'}">DDR4</span></td>
+                                    <td th:text="${mem['speed'] != null ? mem['speed'] + ' MHz' : '—'}">2666 MHz</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Drives -->
+                <div th:if="${drives != null and !drives.isEmpty()}" class="card shadow-sm mb-3">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="bi bi-device-hdd"></i> Накопители</h5>
+                        <span class="badge bg-primary" th:text="${host.formattedDisk}">500 GB</span>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Раздел</th>
+                                    <th>Файловая система</th>
+                                    <th>Объём</th>
+                                    <th>Свободно</th>
+                                    <th>Использование</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="drive : ${drives}">
+                                    <td><code th:text="${drive['path']}">C:\</code></td>
+                                    <td th:text="${drive['file_system'] ?: '—'}">NTFS</td>
+                                    <td th:text="${drive['total_size'] != null ? T(java.lang.String).format('%.1f GB', T(java.lang.Long).parseLong(drive['total_size'].toString()) / 1073741824.0) : '—'}">500 GB</td>
+                                    <td th:text="${drive['free_size'] != null ? T(java.lang.String).format('%.1f GB', T(java.lang.Long).parseLong(drive['free_size'].toString()) / 1073741824.0) : '—'}">200 GB</td>
+                                    <td>
+                                        <div th:if="${drive['total_size'] != null and drive['free_size'] != null}" class="progress" style="height: 20px; min-width: 100px;">
+                                            <div class="progress-bar"
+                                                 th:with="used=${100 - (T(java.lang.Long).parseLong(drive['free_size'].toString()) * 100 / T(java.lang.Long).parseLong(drive['total_size'].toString()))}"
+                                                 th:classappend="${used > 90 ? 'bg-danger' : (used > 70 ? 'bg-warning' : 'bg-success')}"
+                                                 th:style="'width: ' + ${used} + '%'"
+                                                 th:text="${used + '%'}">60%</div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Video Adapters -->
+                <div th:if="${videoAdapters != null and !videoAdapters.isEmpty()}" class="card shadow-sm mb-3">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0"><i class="bi bi-display"></i> Видеоадаптеры</h5>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Название</th>
+                                    <th>Память</th>
+                                    <th>Драйвер</th>
+                                    <th>Дата драйвера</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="va : ${videoAdapters}">
+                                    <td>
+                                        <i class="bi bi-gpu-card me-2 text-primary"></i>
+                                        <span th:text="${va['description'] ?: va['adapter_string'] ?: '—'}">GPU</span>
+                                    </td>
+                                    <td th:text="${va['memory_size'] != null ? T(java.lang.String).format('%.0f MB', T(java.lang.Long).parseLong(va['memory_size'].toString()) / 1048576.0) : '—'}">4096 MB</td>
+                                    <td class="small" th:text="${va['driver_version'] ?: '—'}">v1.0</td>
+                                    <td class="small text-muted" th:text="${va['driver_date'] ?: '—'}">01-01-2025</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Monitors -->
+                <div th:if="${monitors != null and !monitors.isEmpty()}" class="card shadow-sm">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0"><i class="bi bi-tv"></i> Мониторы</h5>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Название</th>
+                                    <th>EDID версия</th>
+                                    <th>Дата производства</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="mon : ${monitors}">
+                                    <td>
+                                        <i class="bi bi-tv me-2 text-info"></i>
+                                        <span th:text="${mon['system_name'] ?: mon['name'] ?: '—'}">Monitor</span>
+                                    </td>
+                                    <td th:text="${mon['edid_version'] ?: '—'}">—</td>
+                                    <td th:text="${mon['date'] ?: '—'}">—</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Software Tab -->
+            <div class="tab-pane fade" id="software" role="tabpanel">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="bi bi-box-seam"></i> Установленные программы</h5>
+                        <span class="badge bg-primary" th:text="${#lists.size(software) + ' программ'}">0 программ</span>
+                    </div>
+                    <div class="card-body">
+                        <!-- Search -->
+                        <div class="mb-3">
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                <input type="text" class="form-control" id="swSearch"
+                                       placeholder="Поиск по ПО..." onkeyup="filterSoftware()">
+                            </div>
+                        </div>
+
+                        <div th:if="${#lists.isEmpty(software)}" class="text-muted text-center p-3">
+                            <i class="bi bi-info-circle"></i> Список ПО ещё не загружен.
+                        </div>
+
+                        <table th:unless="${#lists.isEmpty(software)}" class="table table-hover mb-0" id="swTable">
+                            <thead>
+                                <tr>
+                                    <th style="cursor:pointer" onclick="sortSwTable(0)">Название <i class="bi bi-arrow-down-up text-muted small"></i></th>
+                                    <th style="cursor:pointer" onclick="sortSwTable(1)">Версия <i class="bi bi-arrow-down-up text-muted small"></i></th>
+                                    <th style="cursor:pointer" onclick="sortSwTable(2)">Издатель <i class="bi bi-arrow-down-up text-muted small"></i></th>
+                                    <th sec:authorize="hasRole('ADMIN')" style="width: 80px;" title="Отслеживание изменений">Отсл.</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="sw : ${software}" class="sw-row">
+                                    <td>
+                                        <i class="bi bi-box me-2 text-primary"></i>
+                                        <span th:text="${sw.name}">App</span>
+                                    </td>
+                                    <td><code th:text="${sw.version ?: '—'}">1.0</code></td>
+                                    <td class="text-muted" th:text="${sw.publisher ?: '—'}">Publisher</td>
+                                    <td sec:authorize="hasRole('ADMIN')" class="text-center">
+                                        <div class="form-check form-switch d-inline-block mb-0">
+                                            <!-- Глобально исключено → disabled -->
+                                            <input th:if="${globalExcludedSoftware.contains(sw.name)}"
+                                                   class="form-check-input" type="checkbox" disabled
+                                                   title="Отключено глобально (из Инвентаря)">
+                                            <!-- Per-host или включено -->
+                                            <input th:unless="${globalExcludedSoftware.contains(sw.name)}"
+                                                   class="form-check-input host-sw-tracking-toggle" type="checkbox"
+                                                   th:data-name="${sw.name}"
+                                                   th:checked="${!hostExcludedSoftware.contains(sw.name)}">
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Network Tab -->
+            <div class="tab-pane fade" id="network" role="tabpanel">
+                <div th:if="${host.configJson == null}" class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle me-1"></i> Сетевая конфигурация ещё не загружена.
+                </div>
+
+                <div class="card shadow-sm mb-3">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0"><i class="bi bi-ethernet"></i> Основная информация</h5>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-borderless mb-0">
+                            <tbody>
+                                <tr>
+                                    <th class="text-muted" style="width: 200px;">IP-адрес (внешний)</th>
+                                    <td><code th:text="${host.ipAddress ?: '—'}">0.0.0.0</code></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div th:if="${networkAdapters != null and !networkAdapters.isEmpty()}" class="card shadow-sm">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0"><i class="bi bi-diagram-3"></i> Сетевые адаптеры</h5>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Адаптер</th>
+                                    <th>Подключение</th>
+                                    <th>IP</th>
+                                    <th>MAC</th>
+                                    <th>Скорость</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="na : ${networkAdapters}">
+                                    <td>
+                                        <i class="bi bi-ethernet me-2 text-success"></i>
+                                        <span th:text="${na['adapterName'] ?: '—'}">Adapter</span>
+                                    </td>
+                                    <td class="small" th:text="${na['connectionName'] ?: '—'}">LAN</td>
+                                    <td>
+                                        <code th:if="${na['ip'] != null}" th:text="${na['ip']}">0.0.0.0</code>
+                                        <span th:if="${na['mask'] != null}" class="text-muted small" th:text="' / ' + ${na['mask']}">/ 255.255.255.0</span>
+                                        <span th:if="${na['ip'] == null}">—</span>
+                                    </td>
+                                    <td><code class="small" th:text="${na['mac'] ?: '—'}">00:00:00:00:00:00</code></td>
+                                    <td th:text="${na['speedMbps'] != null ? na['speedMbps'] + ' Мбит/с' : '—'}">1000 Мбит/с</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Changes Tab -->
+            <div class="tab-pane fade" id="changes" role="tabpanel">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="bi bi-clock-history"></i> История изменений</h5>
+                        <div class="d-flex align-items-center gap-2">
+                            <span th:if="${hostChanges != null}" class="badge bg-primary"
+                                  th:text="${#lists.size(hostChanges) + ' записей'}">0 записей</span>
+                            <form sec:authorize="hasRole('ADMIN')" th:if="${unacknowledgedCount > 0}" th:action="@{'/hosts/' + ${host.id} + '/acknowledge'}" method="post">
+                                <button type="submit" class="btn btn-sm btn-success">
+                                    <i class="bi bi-check-all me-1"></i> Подтвердить все
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div th:if="${hostChanges == null or hostChanges.isEmpty()}" class="text-muted text-center p-3">
+                            <i class="bi bi-info-circle"></i> Изменений не зафиксировано
+                        </div>
+                        <table th:unless="${hostChanges == null or hostChanges.isEmpty()}" class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Дата</th>
+                                    <th>Компонент</th>
+                                    <th>Тип изменения</th>
+                                    <th>Старое значение</th>
+                                    <th>Новое значение</th>
+                                    <th>Статус</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="change : ${hostChanges}"
+                                    th:classappend="${!change.acknowledged ? 'table-warning' : ''}">
+                                    <td class="small text-muted"
+                                        th:text="${#temporals.format(change.detectedAt, 'dd.MM.yyyy HH:mm')}">01.01.2025 12:00</td>
+                                    <td>
+                                        <span class="badge bg-secondary" th:text="${change.componentType}">CPU</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge"
+                                              th:classappend="${change.changeType == 'ADDED' ? 'bg-success' : (change.changeType == 'REMOVED' ? 'bg-danger' : 'bg-warning text-dark')}"
+                                              th:text="${change.changeType == 'ADDED' ? 'Добавлено' : (change.changeType == 'REMOVED' ? 'Удалено' : 'Изменено')}">Тип</span>
+                                    </td>
+                                    <td class="small" th:text="${change.oldValue ?: '—'}">—</td>
+                                    <td class="small" th:text="${change.newValue ?: '—'}">—</td>
+                                    <td>
+                                        <span th:if="${change.acknowledged}" class="badge bg-light text-muted"
+                                              th:title="${change.acknowledgedBy != null ? 'Подтвердил: ' + change.acknowledgedBy : ''}">
+                                            <i class="bi bi-check-circle"></i>
+                                            <span th:text="${change.acknowledgedBy != null ? change.acknowledgedBy : 'Просмотрено'}">Просмотрено</span>
+                                        </span>
+                                        <span th:unless="${change.acknowledged}" class="badge bg-warning text-dark">
+                                            <i class="bi bi-exclamation-circle"></i> Новое
+                                        </span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Управление группами -->
+        <div sec:authorize="hasRole('ADMIN')" class="card shadow-sm mt-4">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-collection me-2"></i>Группы хоста</h5>
+            </div>
+            <div class="card-body">
+                <form th:action="@{'/hosts/' + ${host.id} + '/groups'}" method="post">
+                    <div class="mb-3">
+                        <div th:if="${allGroups.isEmpty()}" class="text-muted">
+                            Нет доступных групп. Создайте группы в разделе <a href="/admin">Администрирование</a>.
+                        </div>
+                        <div th:unless="${allGroups.isEmpty()}" class="row g-2">
+                            <div th:each="g : ${allGroups}" class="col-auto">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="groupIds"
+                                           th:value="${g.id}" th:id="'group_' + ${g.id}"
+                                           th:checked="${host.groups.contains(g)}">
+                                    <label class="form-check-label" th:for="'group_' + ${g.id}" th:text="${g.name}">Группа</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button th:unless="${allGroups.isEmpty()}" type="submit" class="btn btn-sm btn-primary">
+                        <i class="bi bi-save me-1"></i> Сохранить группы
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modal: Псевдоним -->
+        <div class="modal fade" id="aliasModal" tabindex="-1" aria-labelledby="aliasModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <form th:action="@{'/hosts/' + ${host.id} + '/alias'}" method="post">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="aliasModalLabel">
+                                <i class="bi bi-pencil me-2"></i>Псевдоним устройства
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p class="text-muted small">Задайте понятное имя для устройства. Системное имя
+                                (<code th:text="${host.computerName}">PC</code>) останется без изменений.</p>
+                            <div class="mb-3">
+                                <label for="aliasInput" class="form-label">Псевдоним</label>
+                                <input type="text" class="form-control" id="aliasInput" name="alias"
+                                       th:value="${host.alias}" placeholder="Например: Бухгалтерия — Елена">
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save me-1"></i>Сохранить
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal: Подтверждение удаления -->
+        <div class="modal fade" id="deleteHostModal" tabindex="-1" aria-labelledby="deleteHostModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header bg-danger text-white">
+                        <h5 class="modal-title" id="deleteHostModalLabel">
+                            <i class="bi bi-exclamation-triangle me-2"></i>Удаление хоста
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Вы уверены, что хотите удалить хост <strong th:text="${host.computerName}">PC</strong>?</p>
+                        <p class="text-muted small mb-0">Будут удалены все данные: конфигурация, список ПО и история изменений. Это действие необратимо.</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                        <form th:action="@{'/hosts/' + ${host.id} + '/delete'}" method="post" class="d-inline">
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash me-1"></i>Удалить
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal: Настройки отслеживания -->
+        <div class="modal fade" id="trackingModal" tabindex="-1" aria-labelledby="trackingModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <form th:action="@{'/hosts/' + ${host.id} + '/tracking'}" method="post">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="trackingModalLabel">
+                                <i class="bi bi-sliders me-2"></i>Настройки отслеживания
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <!-- Унаследованные настройки -->
+                            <div th:if="${!host.groups.isEmpty()}" class="mb-3">
+                                <label class="form-label small text-muted">Настройки от групп:</label>
+                                <div th:each="g : ${host.groups}" class="small text-muted mb-1">
+                                    <i class="bi bi-collection me-1"></i><span th:text="${g.name}">Группа</span>:
+                                    <span th:if="${g.trackedComponents == null}">все компоненты</span>
+                                    <span th:if="${g.trackedComponents != null}" th:each="comp : ${g.trackedComponentsSet}" class="badge bg-light text-dark border me-1"
+                                          th:text="${comp == 'PROCESSOR' ? 'CPU' : (comp == 'MEMORY' ? 'RAM' : (comp == 'DISK' ? 'HDD' : (comp == 'VIDEO_ADAPTER' ? 'GPU' : 'ПО')))}">X</span>
+                                </div>
+                            </div>
+
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" id="useOverrideSwitch" name="useOverride" value="true"
+                                       th:checked="${host.hasTrackingOverride()}"
+                                       onchange="document.getElementById('overrideComponents').style.display = this.checked ? 'block' : 'none'">
+                                <label class="form-check-label" for="useOverrideSwitch">Использовать индивидуальные настройки</label>
+                            </div>
+
+                            <div id="overrideComponents" th:style="${host.hasTrackingOverride() ? 'display:block' : 'display:none'}">
+                                <div class="d-flex flex-column gap-2">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="trackedComponents" value="PROCESSOR" id="htProc"
+                                               th:checked="${effectiveTracked.contains('PROCESSOR')}">
+                                        <label class="form-check-label" for="htProc">Процессор</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="trackedComponents" value="MEMORY" id="htMem"
+                                               th:checked="${effectiveTracked.contains('MEMORY')}">
+                                        <label class="form-check-label" for="htMem">Оперативная память</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="trackedComponents" value="DISK" id="htDisk"
+                                               th:checked="${effectiveTracked.contains('DISK')}">
+                                        <label class="form-check-label" for="htDisk">Диски</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="trackedComponents" value="VIDEO_ADAPTER" id="htVideo"
+                                               th:checked="${effectiveTracked.contains('VIDEO_ADAPTER')}">
+                                        <label class="form-check-label" for="htVideo">Видеоадаптер</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="trackedComponents" value="SOFTWARE" id="htSw"
+                                               th:checked="${effectiveTracked.contains('SOFTWARE')}">
+                                        <label class="form-check-label" for="htSw">Программное обеспечение</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-3 small">
+                                <i class="bi bi-info-circle text-muted me-1"></i>
+                                <span class="text-muted">Отключение компонента не удаляет данные — только прекращает запись изменений в историю.</span>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save me-1"></i>Сохранить
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal: Параметры подключения -->
+        <div class="modal fade" id="credentialsModal" tabindex="-1" aria-labelledby="credentialsModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <form th:action="@{'/hosts/' + ${host.id} + '/credentials'}" method="post">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="credentialsModalLabel">
+                                <i class="bi bi-key me-2"></i>Параметры подключения
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p class="text-muted small">Учётные данные для доступа к конфигурации хоста через Aspia API. Оставьте пустыми, если аутентификация не требуется.</p>
+                            <div class="mb-3">
+                                <label for="credUser" class="form-label">Логин</label>
+                                <input type="text" class="form-control" id="credUser" name="user"
+                                       th:value="${host.aspiaHostUser}" placeholder="Логин для хоста">
+                            </div>
+                            <div class="mb-3">
+                                <label for="credPassword" class="form-label">Пароль</label>
+                                <input type="password" class="form-control" id="credPassword" name="password"
+                                       placeholder="Введите новый пароль">
+                                <div th:if="${host.aspiaHostPasswordEncrypted != null}" class="form-text text-success">
+                                    <i class="bi bi-check-circle me-1"></i>Пароль задан. Оставьте поле пустым, чтобы сохранить текущий.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save me-1"></i>Сохранить
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            function filterSoftware() {
+                var search = document.getElementById('swSearch').value.toLowerCase();
+                document.querySelectorAll('.sw-row').forEach(function(row) {
+                    row.style.display = row.textContent.toLowerCase().indexOf(search) > -1 ? '' : 'none';
+                });
+            }
+
+            var swSortDir = {};
+            function sortSwTable(colIdx) {
+                var table = document.getElementById('swTable');
+                var tbody = table.querySelector('tbody');
+                var rows = Array.from(tbody.querySelectorAll('tr'));
+                swSortDir[colIdx] = !swSortDir[colIdx];
+                var dir = swSortDir[colIdx] ? 1 : -1;
+                rows.sort(function(a, b) {
+                    var aText = a.cells[colIdx].textContent.trim().toLowerCase();
+                    var bText = b.cells[colIdx].textContent.trim().toLowerCase();
+                    return aText < bText ? -1 * dir : aText > bText ? 1 * dir : 0;
+                });
+                rows.forEach(function(row) { tbody.appendChild(row); });
+            }
+
+            /* ===== Toggle отслеживания ПО (per-host) ===== */
+            document.querySelectorAll('.host-sw-tracking-toggle').forEach(function(toggle) {
+                toggle.addEventListener('change', function() {
+                    var name = this.getAttribute('data-name');
+                    var checkbox = this;
+                    var hostId = /*[[${host.id}]]*/ 0;
+                    var csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+                    var csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+
+                    var headers = {'Content-Type': 'application/x-www-form-urlencoded'};
+                    headers[csrfHeader] = csrfToken;
+
+                    fetch('/hosts/' + hostId + '/software/toggle-tracking', {
+                        method: 'POST',
+                        headers: headers,
+                        body: 'name=' + encodeURIComponent(name)
+                    })
+                    .then(function(resp) { return resp.json(); })
+                    .then(function(data) {
+                        if (data.success) {
+                            checkbox.checked = data.tracked;
+                        }
+                    })
+                    .catch(function() {
+                        checkbox.checked = !checkbox.checked;
+                    });
+                });
+            });
+        </script>
+    </div>
+</body>
+
+</html>

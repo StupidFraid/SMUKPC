@@ -1,0 +1,461 @@
+/**
+ * SMUK PC Monitor - Custom Styles
+ * Дополнительные стили поверх Bootstrap 5
+ */
+
+/* ============================================
+   1. GLOBAL STYLES
+   ============================================ */
+
+:root {
+    /* Color Variables */
+    --body-bg: #f8f9fa;
+    --sidebar-bg: #343a40;
+    --sidebar-hover-bg: #495057;
+    --sidebar-active-bg: #0d6efd;
+    --card-bg: #ffffff;
+
+    /* Text Colors */
+    --text-primary: #212529;
+    --text-secondary: #6c757d;
+    --text-muted: #adb5bd;
+    --sidebar-text: #d1d1d1;
+    --sidebar-text-hover: #f1f1f1;
+
+    /* Spacing */
+    --sidebar-width: 250px;
+    --main-padding: 20px;
+}
+
+body {
+    background-color: var(--body-bg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                 "Helvetica Neue", Arial, sans-serif;
+}
+
+/* ============================================
+   2. SIDEBAR
+   ============================================ */
+
+.sidebar {
+    width: var(--sidebar-width);
+    height: 100vh;
+    position: fixed;
+    top: 0;
+    left: 0;
+    padding-top: 20px;
+    background-color: var(--sidebar-bg);
+    overflow-y: auto;
+    z-index: 1000;
+}
+
+.sidebar a {
+    padding: 12px 18px;
+    text-decoration: none;
+    font-size: 1rem;
+    color: var(--sidebar-text);
+    display: block;
+    transition: all 0.3s ease;
+    border-left: 3px solid transparent;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sidebar a:hover {
+    color: var(--sidebar-text-hover);
+    background-color: var(--sidebar-hover-bg);
+    border-left-color: #0d6efd;
+}
+
+.sidebar a.active {
+    background-color: var(--sidebar-active-bg);
+    color: white;
+    border-left-color: white;
+}
+
+/* Sidebar Scrollbar */
+.sidebar::-webkit-scrollbar {
+    width: 8px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+    background: #2c3136;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+    background: #495057;
+    border-radius: 4px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+    background: #5a6268;
+}
+
+/* ============================================
+   3. MAIN CONTENT AREA
+   ============================================ */
+
+.main-content {
+    margin-left: var(--sidebar-width);
+    padding: var(--main-padding);
+    min-height: 100vh;
+}
+
+/* ============================================
+   4. STATISTICS CARDS
+   ============================================ */
+
+.card-stat {
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.card-stat:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.card-stat .display-4 {
+    font-weight: 700;
+    margin: 15px 0;
+}
+
+/* ============================================
+   5. CUSTOM BADGE COLORS
+   ============================================ */
+
+.bg-purple {
+    background-color: #6f42c1 !important;
+}
+
+.bg-orange {
+    background-color: #fd7e14 !important;
+}
+
+.bg-teal {
+    background-color: #20c997 !important;
+}
+
+/* ============================================
+   6. CARDS
+   ============================================ */
+
+.card {
+    border: none;
+    border-radius: 8px;
+}
+
+.card-header {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    font-weight: 600;
+}
+
+.shadow-sm {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08) !important;
+}
+
+.shadow {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+.shadow-lg {
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* ============================================
+   7. TIMELINE
+   ============================================ */
+
+.timeline {
+    position: relative;
+}
+
+.timeline-item {
+    position: relative;
+}
+
+.timeline-marker {
+    font-size: 0.75rem;
+}
+
+.timeline-item:last-child {
+    border-bottom: none !important;
+}
+
+/* ============================================
+   8. BUTTONS
+   ============================================ */
+
+.btn {
+    border-radius: 6px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.btn-sm {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+}
+
+/* ============================================
+   9. BADGES
+   ============================================ */
+
+.badge {
+    font-weight: 500;
+    padding: 0.375rem 0.75rem;
+    border-radius: 6px;
+}
+
+/* ============================================
+   10. FORMS
+   ============================================ */
+
+.form-control,
+.form-select {
+    border-radius: 6px;
+    border: 1px solid #dee2e6;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+/* ============================================
+   11. ALERTS
+   ============================================ */
+
+.alert {
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* ============================================
+   12. TABLES
+   ============================================ */
+
+.table {
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.table thead th {
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.875rem;
+    letter-spacing: 0.5px;
+}
+
+.table tbody tr {
+    transition: all 0.2s ease;
+}
+
+.table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+/* ============================================
+   13. PROGRESS BARS
+   ============================================ */
+
+.progress {
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    transition: width 0.6s ease;
+}
+
+/* ============================================
+   14. DROPDOWNS
+   ============================================ */
+
+.dropdown-menu {
+    border: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border-radius: 8px;
+}
+
+.dropdown-item {
+    transition: all 0.2s ease;
+    border-radius: 4px;
+    margin: 2px 4px;
+}
+
+.dropdown-item:hover {
+    background-color: #f8f9fa;
+}
+
+/* ============================================
+   15. UTILITIES
+   ============================================ */
+
+/* Text utilities */
+.text-ellipsis {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Hover effects */
+.hover-scale {
+    transition: transform 0.2s ease;
+}
+
+.hover-scale:hover {
+    transform: scale(1.05);
+}
+
+/* Loading spinner */
+.spinner-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+/* ============================================
+   16. RESPONSIVE DESIGN
+   ============================================ */
+
+@media (max-width: 768px) {
+    .sidebar {
+        width: 0;
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+    }
+
+    .sidebar.show {
+        width: var(--sidebar-width);
+        transform: translateX(0);
+    }
+
+    .main-content {
+        margin-left: 0;
+    }
+
+    .card-stat .display-4 {
+        font-size: 2rem;
+    }
+}
+
+/* ============================================
+   17. ANIMATIONS
+   ============================================ */
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.5s ease;
+}
+
+@keyframes slideInLeft {
+    from {
+        transform: translateX(-100%);
+    }
+    to {
+        transform: translateX(0);
+    }
+}
+
+.slide-in-left {
+    animation: slideInLeft 0.3s ease;
+}
+
+/* ============================================
+   18. PRINT STYLES
+   ============================================ */
+
+@media print {
+    .sidebar,
+    .btn-toolbar,
+    .dropdown {
+        display: none !important;
+    }
+
+    .main-content {
+        margin-left: 0;
+    }
+
+    .card-stat {
+        box-shadow: none;
+        border: 1px solid #dee2e6;
+    }
+}
+
+/* ============================================
+   19. DARK MODE (Optional)
+   ============================================ */
+
+@media (prefers-color-scheme: dark) {
+    /* Раскомментируйте для поддержки темной темы */
+    /*
+    :root {
+        --body-bg: #1a1a1a;
+        --card-bg: #2d2d2d;
+        --text-primary: #f8f9fa;
+    }
+
+    body {
+        background-color: var(--body-bg);
+        color: var(--text-primary);
+    }
+
+    .card {
+        background-color: var(--card-bg);
+    }
+    */
+}
+
+/* ============================================
+   20. CUSTOM SCROLLBAR FOR MAIN CONTENT
+   ============================================ */
+
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}

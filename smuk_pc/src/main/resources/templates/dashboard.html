@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+
+<head>
+    <title>Главная — СМУК ПК</title>
+</head>
+
+<body>
+    <div layout:fragment="content">
+        <!-- Page Header -->
+        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+            <h1 class="h2">Главная</h1>
+            <div class="btn-toolbar mb-2 mb-md-0">
+                <form sec:authorize="hasRole('ADMIN')" th:action="@{/sync}" method="post" class="d-inline">
+                    <button type="submit" class="btn btn-sm btn-primary">
+                        <i class="bi bi-arrow-repeat"></i> Синхронизировать
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Sync Messages -->
+        <div th:if="${syncMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle me-1"></i>
+            <span th:text="${syncMessage}">Синхронизация завершена</span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        <div th:if="${syncError}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            <span th:text="${syncError}">Ошибка синхронизации</span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <!-- Stats Widgets Row -->
+        <div class="row g-4 mb-4">
+            <!-- Total Hosts Card -->
+            <div class="col">
+                <a href="/hosts" class="text-decoration-none text-white">
+                    <div class="card card-stat bg-primary text-white h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">Всего устройств</h5>
+                            <h2 id="stat-total" class="display-4 fw-bold" th:text="${stats.totalHosts}">0</h2>
+                            <p class="card-text"><i class="bi bi-pc-display"></i> Управляемые</p>
+                        </div>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Online Hosts Card -->
+            <div class="col">
+                <a href="/hosts?filter=ONLINE" class="text-decoration-none text-white">
+                    <div class="card card-stat bg-success text-white h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">Онлайн</h5>
+                            <h2 id="stat-online" class="display-4 fw-bold" th:text="${stats.onlineHosts}">0</h2>
+                            <p class="card-text"><i class="bi bi-wifi"></i> Подключены</p>
+                        </div>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Offline Hosts Card -->
+            <div class="col">
+                <a href="/hosts?filter=OFFLINE" class="text-decoration-none text-white">
+                    <div class="card card-stat bg-secondary text-white h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">Оффлайн</h5>
+                            <h2 id="stat-offline" class="display-4 fw-bold" th:text="${stats.offlineHosts}">0</h2>
+                            <p class="card-text"><i class="bi bi-wifi-off"></i> Не подключены</p>
+                        </div>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Error Hosts Card -->
+            <div class="col">
+                <a href="/hosts?filter=ERROR" class="text-decoration-none text-white">
+                    <div class="card card-stat bg-danger text-white h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">Ошибки синхр.</h5>
+                            <h2 id="stat-errors" class="display-4 fw-bold" th:text="${stats.errorHosts}">0</h2>
+                            <p class="card-text"><i class="bi bi-exclamation-triangle"></i> Требуют внимания</p>
+                        </div>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Unacknowledged Changes Card -->
+            <div class="col">
+                <a href="/hosts?filter=CHANGED" class="text-decoration-none">
+                    <div class="card card-stat bg-warning text-dark h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">Неподтв. изменения</h5>
+                            <h2 id="stat-changed" class="display-4 fw-bold" th:text="${stats.unacknowledgedChanges}">0</h2>
+                            <p class="card-text"><i class="bi bi-exclamation-circle"></i> Требуют подтверждения</p>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <!-- Sync Status Card -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-arrow-repeat"></i> Состояние синхронизации</h5>
+                <span th:if="${stats.offlineHosts == 0 and stats.totalHosts > 0}" class="badge bg-success">Все онлайн</span>
+                <span th:if="${stats.offlineHosts > 0}" class="badge bg-secondary"
+                    th:text="${stats.offlineHosts + ' оффлайн'}">0 оффлайн</span>
+                <span th:if="${stats.totalHosts == 0}" class="badge bg-secondary">Нет данных</span>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-1"><strong>Последняя синхронизация:</strong>
+                            <span id="sync-time" th:text="${lastSyncTime}">Ещё не выполнялась</span>
+                        </p>
+                        <p class="mb-0 text-muted small" th:if="${lastSyncStatus}"
+                           th:text="${lastSyncStatus}">Статус</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-1"><strong>Автосинхронизация:</strong> каждые 5 мин</p>
+                        <p class="mb-0 text-muted small">Список хостов + конфигурации изменённых</p>
+                    </div>
+                </div>
+                <div class="progress mt-3" style="height: 5px;" th:if="${stats.totalHosts > 0}">
+                    <div class="progress-bar bg-success" role="progressbar"
+                         th:style="'width: ' + ${stats.totalHosts > 0 ? (stats.onlineHosts * 100 / stats.totalHosts) : 0} + '%'"
+                         aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Component Changes Card -->
+        <div id="changes-card" class="card shadow-sm">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="bi bi-clock-history"></i> Непросмотренные изменения
+                </h5>
+                <div class="d-flex align-items-center gap-2">
+                    <span id="badge-changes24h" class="badge bg-warning text-dark" th:text="${stats.unacknowledgedChanges + ' неподтв.'}">0 неподтв.</span>
+                    <form sec:authorize="hasRole('ADMIN')" th:unless="${#lists.isEmpty(recentChanges)}" th:action="@{/events/acknowledge-all}" method="post">
+                        <input type="hidden" name="redirectTo" value="/" />
+                        <button type="submit" class="btn btn-sm btn-success">
+                            <i class="bi bi-check-all me-1"></i> Подтвердить все
+                        </button>
+                    </form>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- No Changes Message -->
+                <div th:if="${#lists.isEmpty(recentChanges)}" class="text-muted text-center p-3">
+                    <i class="bi bi-check-circle"></i> Нет неподтверждённых изменений.
+                </div>
+
+                <!-- Timeline of Changes -->
+                <div th:unless="${#lists.isEmpty(recentChanges)}" class="timeline">
+                    <div th:each="change : ${recentChanges}" class="timeline-item mb-3 pb-3 border-bottom">
+                        <div class="d-flex">
+                            <!-- Timeline Marker -->
+                            <div class="timeline-marker me-3">
+                                <i class="bi bi-circle-fill"
+                                   th:classappend="${change.changeType == 'ADDED' ? 'text-success' :
+                                                   (change.changeType == 'REMOVED' ? 'text-danger' : 'text-warning')}"></i>
+                            </div>
+
+                            <!-- Change Details -->
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h6 class="mb-1">
+                                            <!-- Host Link -->
+                                            <a th:href="@{/hosts/{id}(id=${change.hostId})}"
+                                               class="text-decoration-none">
+                                                <span th:text="${change.hostName}">PC-001</span>
+                                            </a>
+                                            <small th:if="${change.hostGroup != null and !change.hostGroup.isEmpty()}"
+                                                   class="text-muted ms-1"
+                                                   th:text="'(' + ${change.hostGroup} + ')'">(Группа)</small>
+
+                                            <!-- Component Type Badge -->
+                                            <span class="badge ms-2"
+                                                  th:classappend="${change.componentType == 'PROCESSOR' ? 'bg-primary' :
+                                                                   (change.componentType == 'MEMORY' ? 'bg-info' :
+                                                                   (change.componentType == 'DISK' ? 'bg-success' :
+                                                                   (change.componentType == 'VIDEO_ADAPTER' ? 'bg-dark' :
+                                                                   (change.componentType == 'SOFTWARE' ? 'bg-purple' : 'bg-secondary'))))}">
+                                                <span th:text="${change.componentType}">PROCESSOR</span>
+                                            </span>
+
+                                            <!-- Change Type Badge -->
+                                            <span class="badge"
+                                                  th:classappend="${change.changeType == 'ADDED' ? 'bg-success' :
+                                                                   (change.changeType == 'REMOVED' ? 'bg-danger' : 'bg-warning')}"
+                                                  th:text="${change.changeType}">MODIFIED</span>
+
+                                        </h6>
+
+                                        <!-- Old Value -> New Value -->
+                                        <p class="mb-0 small">
+                                            <span th:if="${change.oldValue != null and !change.oldValue.isEmpty()}" class="text-muted">
+                                                <span th:text="${change.oldValue}">Old</span>
+                                            </span>
+                                            <i th:if="${change.oldValue != null and !change.oldValue.isEmpty() and change.newValue != null and !change.newValue.isEmpty()}"
+                                               class="bi bi-arrow-right mx-1"></i>
+                                            <span th:if="${change.newValue != null and !change.newValue.isEmpty()}" class="fw-bold">
+                                                <span th:text="${change.newValue}">New</span>
+                                            </span>
+                                        </p>
+                                    </div>
+
+                                    <!-- Date + Acknowledge -->
+                                    <div class="text-end">
+                                        <small class="text-muted text-nowrap d-block"
+                                               th:text="${change.changeDate}">07.02.2026 14:30</small>
+                                        <form sec:authorize="hasRole('ADMIN')" th:action="@{/events/{id}/acknowledge(id=${change.id})}" method="post" class="mt-1">
+                                            <input type="hidden" name="redirectTo" value="/" />
+                                            <button type="submit" class="btn btn-sm btn-outline-success" title="Подтвердить">
+                                                <i class="bi bi-check-lg"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    <script th:inline="javascript">
+    (function() {
+        var REFRESH_INTERVAL = 30000; // 30 секунд
+        var csrfToken = document.querySelector('meta[name="_csrf"]');
+        var csrfHeader = document.querySelector('meta[name="_csrf_header"]');
+
+        function componentBadgeClass(type) {
+            switch(type) {
+                case 'PROCESSOR': return 'bg-primary';
+                case 'MEMORY': return 'bg-info';
+                case 'DISK': return 'bg-success';
+                case 'VIDEO_ADAPTER': return 'bg-dark';
+                case 'SOFTWARE': return 'bg-purple';
+                default: return 'bg-secondary';
+            }
+        }
+
+        function changeBadgeClass(type) {
+            switch(type) {
+                case 'ADDED': return 'bg-success';
+                case 'REMOVED': return 'bg-danger';
+                default: return 'bg-warning';
+            }
+        }
+
+        function markerClass(type) {
+            switch(type) {
+                case 'ADDED': return 'text-success';
+                case 'REMOVED': return 'text-danger';
+                default: return 'text-warning';
+            }
+        }
+
+        function buildChangeHtml(c) {
+            var html = '<div class="timeline-item mb-3 pb-3 border-bottom"><div class="d-flex">';
+            html += '<div class="timeline-marker me-3"><i class="bi bi-circle-fill ' + markerClass(c.changeType) + '"></i></div>';
+            html += '<div class="flex-grow-1"><div class="d-flex justify-content-between align-items-start"><div>';
+            html += '<h6 class="mb-1">';
+            html += '<a href="/hosts/' + c.hostId + '" class="text-decoration-none">' + escHtml(c.hostName) + '</a>';
+            if (c.hostGroup) {
+                html += ' <small class="text-muted ms-1">(' + escHtml(c.hostGroup) + ')</small>';
+            }
+            html += ' <span class="badge ms-2 ' + componentBadgeClass(c.componentType) + '">' + escHtml(c.componentType) + '</span>';
+            html += ' <span class="badge ' + changeBadgeClass(c.changeType) + '">' + escHtml(c.changeType) + '</span>';
+            html += '</h6>';
+            html += '<p class="mb-0 small">';
+            if (c.oldValue) html += '<span class="text-muted">' + escHtml(c.oldValue) + '</span>';
+            if (c.oldValue && c.newValue) html += ' <i class="bi bi-arrow-right mx-1"></i> ';
+            if (c.newValue) html += '<span class="fw-bold">' + escHtml(c.newValue) + '</span>';
+            html += '</p></div>';
+            html += '<div class="text-end"><small class="text-muted text-nowrap d-block">' + escHtml(c.changeDate) + '</small>';
+            html += '<form action="/events/' + c.id + '/acknowledge" method="post" class="mt-1">';
+            html += '<input type="hidden" name="redirectTo" value="/" />';
+            if (csrfToken && csrfHeader) {
+                html += '<input type="hidden" name="_csrf" value="' + csrfToken.getAttribute('content') + '" />';
+            }
+            html += '<button type="submit" class="btn btn-sm btn-outline-success" title="Подтвердить"><i class="bi bi-check-lg"></i></button>';
+            html += '</form></div></div></div></div></div>';
+            return html;
+        }
+
+        function escHtml(str) {
+            if (!str) return '';
+            var div = document.createElement('div');
+            div.appendChild(document.createTextNode(str));
+            return div.innerHTML;
+        }
+
+        function refreshDashboard() {
+            fetch('/api/dashboard')
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    var s = data.stats;
+                    // Обновляем счётчики
+                    setText('stat-total', s.totalHosts);
+                    setText('stat-online', s.onlineHosts);
+                    setText('stat-offline', s.offlineHosts);
+                    setText('stat-errors', s.errorHosts);
+                    setText('stat-changed', s.unacknowledgedChanges);
+                    setText('badge-changes24h', s.unacknowledgedChanges + ' неподтв.');
+                    setText('sync-time', data.lastSyncTime);
+
+                    // Обновляем список изменений
+                    var card = document.getElementById('changes-card');
+                    if (!card) return;
+                    var body = card.querySelector('.card-body');
+                    if (!body) return;
+
+                    var changes = data.recentChanges;
+                    if (!changes || changes.length === 0) {
+                        body.innerHTML = '<div class="text-muted text-center p-3"><i class="bi bi-check-circle"></i> Нет неподтверждённых изменений.</div>';
+                    } else {
+                        var html = '<div class="timeline">';
+                        for (var i = 0; i < changes.length; i++) {
+                            html += buildChangeHtml(changes[i]);
+                        }
+                        html += '</div>';
+                        body.innerHTML = html;
+                    }
+                })
+                .catch(function(err) {
+                    console.warn('Dashboard auto-refresh error:', err);
+                });
+        }
+
+        function setText(id, val) {
+            var el = document.getElementById(id);
+            if (el) el.textContent = val;
+        }
+
+        setInterval(refreshDashboard, REFRESH_INTERVAL);
+    })();
+    </script>
+    </div>
+</body>
+
+</html>

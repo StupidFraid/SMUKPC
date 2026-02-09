@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+
+<head>
+    <title>Администрирование — СМУК ПК</title>
+</head>
+
+<body>
+    <div layout:fragment="content">
+        <!-- Page Header -->
+        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+            <h1 class="h2">
+                <i class="bi bi-gear me-2"></i>Администрирование
+            </h1>
+        </div>
+
+        <!-- Flash Messages -->
+        <div th:if="${userSuccess}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle me-1"></i>
+            <span th:text="${userSuccess}">Успех</span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        <div th:if="${userError}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            <span th:text="${userError}">Ошибка</span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <!-- Users Card -->
+        <div class="card shadow-sm">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="bi bi-people me-2"></i>Пользователи системы
+                </h5>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-primary" th:text="${#lists.size(users) + ' пользователей'}">2 пользователей</span>
+                    <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                        <i class="bi bi-person-plus me-1"></i> Добавить
+                    </button>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Имя пользователя</th>
+                            <th>Отображаемое имя</th>
+                            <th>Роль</th>
+                            <th>Статус</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="u : ${users}">
+                            <td class="text-muted" th:text="${u.id}">1</td>
+                            <td>
+                                <i class="bi bi-person-circle me-2 text-primary"></i>
+                                <strong th:text="${u.username}">admin</strong>
+                            </td>
+                            <td th:text="${u.displayName}">Администратор</td>
+                            <td>
+                                <span class="badge"
+                                      th:classappend="${u.role == 'ADMIN' ? 'bg-danger' : 'bg-info'}"
+                                      th:text="${u.role == 'ADMIN' ? 'Администратор' : 'Пользователь'}">Администратор</span>
+                            </td>
+                            <td>
+                                <span class="badge"
+                                      th:classappend="${u.enabled ? 'bg-success' : 'bg-secondary'}"
+                                      th:text="${u.enabled ? 'Активен' : 'Отключён'}">Активен</span>
+                            </td>
+                            <td>
+                                <button type="button" class="btn btn-sm btn-outline-warning me-1"
+                                        title="Сменить пароль"
+                                        data-bs-toggle="modal"
+                                        th:data-bs-target="'#passwordModal_' + ${u.id}">
+                                    <i class="bi bi-key"></i>
+                                </button>
+                                <form th:action="@{'/admin/users/' + ${u.id} + '/toggle'}" method="post" style="display:inline">
+                                    <button type="submit" class="btn btn-sm me-1"
+                                            th:classappend="${u.enabled ? 'btn-outline-secondary' : 'btn-outline-success'}"
+                                            th:title="${u.enabled ? 'Деактивировать' : 'Активировать'}">
+                                        <i class="bi" th:classappend="${u.enabled ? 'bi-person-slash' : 'bi-person-check'}"></i>
+                                    </button>
+                                </form>
+                                <form th:action="@{'/admin/users/' + ${u.id} + '/delete'}" method="post"
+                                      style="display:inline"
+                                      onsubmit="return confirm('Удалить пользователя?');">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Удалить">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Add User Modal -->
+        <div class="modal fade" id="addUserModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <form th:action="@{/admin/users}" method="post">
+                        <div class="modal-header">
+                            <h5 class="modal-title">
+                                <i class="bi bi-person-plus me-2"></i>Добавить пользователя
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label for="newUsername" class="form-label">Логин</label>
+                                <input type="text" class="form-control" id="newUsername" name="username" required
+                                       placeholder="Например: ivanov" autocomplete="off">
+                            </div>
+                            <div class="mb-3">
+                                <label for="newDisplayName" class="form-label">Отображаемое имя</label>
+                                <input type="text" class="form-control" id="newDisplayName" name="displayName" required
+                                       placeholder="Например: Иванов И.И.">
+                            </div>
+                            <div class="mb-3">
+                                <label for="newPassword" class="form-label">Пароль</label>
+                                <input type="password" class="form-control" id="newPassword" name="password" required
+                                       minlength="4" autocomplete="new-password">
+                            </div>
+                            <div class="mb-3">
+                                <label for="newRole" class="form-label">Роль</label>
+                                <select class="form-select" id="newRole" name="role">
+                                    <option value="USER">Пользователь</option>
+                                    <option value="ADMIN">Администратор</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-person-plus me-1"></i>Создать
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Change Password Modals -->
+        <div th:each="u : ${users}">
+            <div class="modal fade" th:id="'passwordModal_' + ${u.id}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <form th:action="@{'/admin/users/' + ${u.id} + '/password'}" method="post">
+                            <div class="modal-header">
+                                <h5 class="modal-title">
+                                    <i class="bi bi-key me-2"></i>Сменить пароль — <span th:text="${u.username}">user</span>
+                                </h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <label th:for="'newPwd_' + ${u.id}" class="form-label">Новый пароль</label>
+                                    <input type="password" class="form-control" th:id="'newPwd_' + ${u.id}"
+                                           name="newPassword" required minlength="4" autocomplete="new-password">
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                                <button type="submit" class="btn btn-warning">
+                                    <i class="bi bi-key me-1"></i>Сменить пароль
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Host Groups Card -->
+        <div class="card shadow-sm mt-4">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="bi bi-collection me-2"></i>Группы хостов
+                </h5>
+                <span class="badge bg-primary" th:text="${#lists.size(groups) + ' групп'}">0 групп</span>
+            </div>
+            <div class="card-body">
+                <!-- Add Group Form -->
+                <form th:action="@{/admin/groups}" method="post" class="mb-3">
+                    <div class="row g-2 align-items-end">
+                        <div class="col-md-4">
+                            <label for="groupName" class="form-label">Название группы</label>
+                            <input type="text" class="form-control" id="groupName" name="name" required placeholder="Например: Бухгалтерия">
+                        </div>
+                        <div class="col-md-5">
+                            <label for="groupDesc" class="form-label">Описание</label>
+                            <input type="text" class="form-control" id="groupDesc" name="description" placeholder="Необязательно">
+                        </div>
+                        <div class="col-md-3">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-plus-lg me-1"></i> Добавить группу
+                            </button>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <label class="form-label small text-muted">Отслеживаемые компоненты (по умолчанию — все):</label>
+                        <div class="d-flex gap-3 flex-wrap">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="trackedComponents" value="PROCESSOR" id="newGrpProcessor" checked>
+                                <label class="form-check-label" for="newGrpProcessor">Процессор</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="trackedComponents" value="MEMORY" id="newGrpMemory" checked>
+                                <label class="form-check-label" for="newGrpMemory">Память</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="trackedComponents" value="DISK" id="newGrpDisk" checked>
+                                <label class="form-check-label" for="newGrpDisk">Диски</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="trackedComponents" value="VIDEO_ADAPTER" id="newGrpVideo" checked>
+                                <label class="form-check-label" for="newGrpVideo">Видеоадаптер</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="trackedComponents" value="SOFTWARE" id="newGrpSoftware" checked>
+                                <label class="form-check-label" for="newGrpSoftware">ПО</label>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Название</th>
+                            <th>Описание</th>
+                            <th>Отслеживание</th>
+                            <th>Дата создания</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="g : ${groups}">
+                            <td class="text-muted" th:text="${g.id}">1</td>
+                            <td>
+                                <i class="bi bi-collection me-2 text-info"></i>
+                                <strong th:text="${g.name}">Группа</strong>
+                            </td>
+                            <td class="text-muted" th:text="${g.description ?: '—'}">—</td>
+                            <td>
+                                <span th:if="${g.trackedComponents == null}" class="badge bg-success">Все</span>
+                                <span th:if="${g.trackedComponents != null}" class="small">
+                                    <span th:each="comp : ${g.trackedComponentsSet}" class="badge bg-secondary me-1"
+                                          th:text="${comp == 'PROCESSOR' ? 'CPU' : (comp == 'MEMORY' ? 'RAM' : (comp == 'DISK' ? 'HDD' : (comp == 'VIDEO_ADAPTER' ? 'GPU' : 'ПО')))}">X</span>
+                                </span>
+                            </td>
+                            <td class="text-muted small"
+                                th:text="${g.createdAt != null ? #temporals.format(g.createdAt, 'dd.MM.yyyy HH:mm') : '—'}">—</td>
+                            <td>
+                                <button type="button" class="btn btn-sm btn-outline-primary me-1" title="Настройки отслеживания"
+                                        data-bs-toggle="modal" th:data-bs-target="'#trackingModal_' + ${g.id}">
+                                    <i class="bi bi-sliders"></i>
+                                </button>
+                                <form th:action="@{'/admin/groups/' + ${g.id} + '/delete'}" method="post"
+                                      style="display:inline"
+                                      onsubmit="return confirm('Удалить группу?');">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Удалить">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        <tr th:if="${groups.isEmpty()}">
+                            <td colspan="6" class="text-center text-muted py-3">Нет групп</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <!-- Modals: Настройки отслеживания групп -->
+        <div th:each="g : ${groups}">
+            <div class="modal fade" th:id="'trackingModal_' + ${g.id}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <form th:action="@{'/admin/groups/' + ${g.id} + '/tracking'}" method="post">
+                            <div class="modal-header">
+                                <h5 class="modal-title">
+                                    <i class="bi bi-sliders me-2"></i>Отслеживание — <span th:text="${g.name}">Группа</span>
+                                </h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p class="text-muted small">Выберите компоненты, изменения которых будут фиксироваться для хостов этой группы. Если ничего не выбрано — отслеживаются все.</p>
+                                <div class="d-flex flex-column gap-2">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="trackedComponents" value="PROCESSOR"
+                                               th:id="'tc_proc_' + ${g.id}"
+                                               th:checked="${g.trackedComponents == null or g.trackedComponentsSet.contains('PROCESSOR')}">
+                                        <label class="form-check-label" th:for="'tc_proc_' + ${g.id}">Процессор</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="trackedComponents" value="MEMORY"
+                                               th:id="'tc_mem_' + ${g.id}"
+                                               th:checked="${g.trackedComponents == null or g.trackedComponentsSet.contains('MEMORY')}">
+                                        <label class="form-check-label" th:for="'tc_mem_' + ${g.id}">Оперативная память</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="trackedComponents" value="DISK"
+                                               th:id="'tc_disk_' + ${g.id}"
+                                               th:checked="${g.trackedComponents == null or g.trackedComponentsSet.contains('DISK')}">
+                                        <label class="form-check-label" th:for="'tc_disk_' + ${g.id}">Диски</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="trackedComponents" value="VIDEO_ADAPTER"
+                                               th:id="'tc_video_' + ${g.id}"
+                                               th:checked="${g.trackedComponents == null or g.trackedComponentsSet.contains('VIDEO_ADAPTER')}">
+                                        <label class="form-check-label" th:for="'tc_video_' + ${g.id}">Видеоадаптер</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="trackedComponents" value="SOFTWARE"
+                                               th:id="'tc_sw_' + ${g.id}"
+                                               th:checked="${g.trackedComponents == null or g.trackedComponentsSet.contains('SOFTWARE')}">
+                                        <label class="form-check-label" th:for="'tc_sw_' + ${g.id}">Программное обеспечение</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-save me-1"></i>Сохранить
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

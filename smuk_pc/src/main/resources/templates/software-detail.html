@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+
+<head>
+    <title th:text="${softwareName} + ' — СМУК ПК'">ПО — СМУК ПК</title>
+</head>
+
+<body>
+    <div layout:fragment="content">
+        <!-- Page Header -->
+        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+            <div>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-1">
+                        <li class="breadcrumb-item"><a href="/inventory">Инвентарь</a></li>
+                        <li class="breadcrumb-item"><a href="/inventory" onclick="sessionStorage.setItem('inventoryTab','software')">Программное обеспечение</a></li>
+                        <li class="breadcrumb-item active" th:text="${softwareName}">Program</li>
+                    </ol>
+                </nav>
+                <h1 class="h2">
+                    <i class="bi bi-box-seam me-2 text-primary"></i>
+                    <span th:text="${softwareName}">Program</span>
+                </h1>
+            </div>
+            <div class="btn-toolbar mb-2 mb-md-0">
+                <a href="/inventory" class="btn btn-sm btn-outline-secondary"
+                   onclick="sessionStorage.setItem('inventoryTab','software')">
+                    <i class="bi bi-arrow-left me-1"></i> Назад к инвентарю
+                </a>
+            </div>
+        </div>
+
+        <!-- Software Info -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body text-center">
+                        <i class="bi bi-building fs-1 text-info"></i>
+                        <h6 class="mt-2 mb-0">Издатель</h6>
+                        <span th:text="${publisher}">Publisher</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body text-center">
+                        <i class="bi bi-pc-display fs-1 text-success"></i>
+                        <h6 class="mt-2 mb-0">Установлено на</h6>
+                        <span class="fs-4 fw-bold" th:text="${#lists.size(softwareEntries)}">0</span>
+                        <span class="text-muted"> ПК</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body text-center">
+                        <i class="bi bi-tags fs-1 text-warning"></i>
+                        <h6 class="mt-2 mb-0">Версий</h6>
+                        <span id="versionCount" class="fs-4 fw-bold">—</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hosts Table -->
+        <div class="card shadow-sm">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-pc-display me-2"></i>Компьютеры с установленным ПО</h5>
+                <span class="badge bg-primary" th:text="${#lists.size(softwareEntries) + ' ПК'}">0 ПК</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0" id="detailTable">
+                    <thead>
+                        <tr>
+                            <th>Имя ПК</th>
+                            <th>Версия</th>
+                            <th>Группа</th>
+                            <th>ОС</th>
+                            <th>Статус</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="entry : ${softwareEntries}"
+                            style="cursor:pointer;"
+                            th:onclick="'window.location.href=\'/hosts/' + ${entry.host.id} + '\''">
+                            <td>
+                                <i class="bi bi-pc-display me-1 text-primary"></i>
+                                <strong th:text="${entry.host.displayName}">PC</strong>
+                                <span th:if="${entry.host.alias != null and !entry.host.alias.isEmpty()}" class="text-muted small ms-1"
+                                      th:text="'(' + ${entry.host.computerName} + ')'"></span>
+                            </td>
+                            <td><code th:text="${entry.version ?: '—'}">1.0</code></td>
+                            <td>
+                                <span th:if="${entry.host.groups.isEmpty()}" class="text-muted small">—</span>
+                                <span th:each="g : ${entry.host.groups}" class="badge bg-secondary me-1" th:text="${g.name}">Группа</span>
+                            </td>
+                            <td class="small" th:text="${entry.host.osName ?: '—'}">Windows 10</td>
+                            <td>
+                                <span th:if="${entry.host.syncError != null}" class="badge bg-danger">Ошибка</span>
+                                <span th:if="${entry.host.syncError == null}" class="badge"
+                                      th:classappend="${entry.host.online ? 'bg-success' : 'bg-secondary'}"
+                                      th:text="${entry.host.online ? 'Онлайн' : 'Оффлайн'}">Статус</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <script>
+            // Подсчёт уникальных версий
+            (function() {
+                var versions = new Set();
+                document.querySelectorAll('#detailTable tbody tr td:nth-child(2) code').forEach(function(el) {
+                    versions.add(el.textContent.trim());
+                });
+                document.getElementById('versionCount').textContent = versions.size;
+            })();
+        </script>
+    </div>
+</body>
+
+</html>

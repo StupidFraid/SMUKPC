@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+
+<head>
+    <title>Профиль — СМУК ПК</title>
+</head>
+
+<body>
+    <div layout:fragment="content">
+        <!-- Page Header -->
+        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+            <h1 class="h2"><i class="bi bi-person-circle me-2"></i>Профиль</h1>
+        </div>
+
+        <!-- Flash Messages -->
+        <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle me-1"></i>
+            <span th:text="${success}">Успех</span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            <span th:text="${error}">Ошибка</span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <div class="row g-4">
+            <!-- User Info Card -->
+            <div class="col-md-6">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0"><i class="bi bi-person me-2"></i>Информация о пользователе</h5>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-borderless mb-0">
+                            <tbody>
+                                <tr>
+                                    <th class="text-muted" style="width: 180px;">Логин</th>
+                                    <td><code th:text="${user.username}">admin</code></td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted">Отображаемое имя</th>
+                                    <td th:text="${user.displayName ?: '—'}">Администратор</td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted">Роль</th>
+                                    <td>
+                                        <span class="badge"
+                                              th:classappend="${user.role == 'ADMIN' ? 'bg-danger' : 'bg-primary'}"
+                                              th:text="${user.role == 'ADMIN' ? 'Администратор' : 'Пользователь'}">Роль</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Change Password Card -->
+            <div class="col-md-6">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0"><i class="bi bi-key me-2"></i>Смена пароля</h5>
+                    </div>
+                    <div class="card-body">
+                        <form th:action="@{/profile/password}" method="post">
+                            <div class="mb-3">
+                                <label for="currentPassword" class="form-label">Текущий пароль</label>
+                                <input type="password" class="form-control" id="currentPassword" name="currentPassword" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="newPassword" class="form-label">Новый пароль</label>
+                                <input type="password" class="form-control" id="newPassword" name="newPassword" required minlength="4">
+                            </div>
+                            <div class="mb-3">
+                                <label for="confirmPassword" class="form-label">Подтверждение пароля</label>
+                                <input type="password" class="form-control" id="confirmPassword" name="confirmPassword" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save me-1"></i>Сменить пароль
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

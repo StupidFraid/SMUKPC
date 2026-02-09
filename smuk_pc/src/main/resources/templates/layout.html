@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+    <title>СМУК ПК</title>
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+
+    <!-- Custom Styles -->
+    <link th:href="@{/css/custom-styles.css}" rel="stylesheet">
+</head>
+
+<body>
+
+    <!-- Sidebar -->
+    <div class="sidebar d-flex flex-column p-3 text-white">
+        <!-- Logo/Brand -->
+        <a href="/" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-white text-decoration-none">
+            <i class="bi bi-pc-display-horizontal me-2 fs-5"></i>
+            <span class="fs-4 fw-bold">СМУК ПК</span>
+        </a>
+        <hr>
+
+        <!-- Navigation Menu -->
+        <ul class="nav nav-pills flex-column mb-auto">
+            <li class="nav-item">
+                <a href="/" class="nav-link text-white" th:classappend="${currentPage == 'dashboard' ? 'active' : ''}">
+                    <i class="bi bi-speedometer2 me-2"></i>
+                    Главная
+                </a>
+            </li>
+            <li>
+                <a href="/hosts" class="nav-link text-white" th:classappend="${currentPage == 'hosts' ? 'active' : ''}">
+                    <i class="bi bi-pc-display me-2"></i>
+                    Устройства
+                </a>
+            </li>
+            <li>
+                <a href="/inventory" class="nav-link text-white" th:classappend="${currentPage == 'inventory' ? 'active' : ''}">
+                    <i class="bi bi-bar-chart me-2"></i>
+                    Реестр
+                </a>
+            </li>
+            <li>
+                <a href="/events" class="nav-link text-white" th:classappend="${currentPage == 'events' ? 'active' : ''}">
+                    <i class="bi bi-journal-text me-2"></i>
+                    События
+                </a>
+            </li>
+            <li sec:authorize="hasRole('ADMIN')">
+                <a href="/admin" class="nav-link text-white" th:classappend="${currentPage == 'admin' ? 'active' : ''}">
+                    <i class="bi bi-gear me-2"></i>
+                    Администрирование
+                </a>
+            </li>
+        </ul>
+
+        <hr>
+
+        <!-- User Dropdown -->
+        <div class="dropdown">
+            <a href="#" class="d-flex align-items-center text-white text-decoration-none dropdown-toggle"
+                id="dropdownUser1" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-person-circle me-2 fs-5"></i>
+                <strong sec:authentication="name">Пользователь</strong>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-dark text-small shadow" aria-labelledby="dropdownUser1">
+                <li><a class="dropdown-item" href="/profile">Профиль</a></li>
+                <li>
+                    <hr class="dropdown-divider">
+                </li>
+                <li>
+                    <form th:action="@{/logout}" method="post" class="d-inline">
+                        <button type="submit" class="dropdown-item">
+                            <i class="bi bi-box-arrow-right me-2"></i>Выйти
+                        </button>
+                    </form>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="main-content">
+        <div layout:fragment="content"></div>
+    </div>
+
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>
