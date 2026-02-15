@@ -501,7 +501,7 @@ public class AspiaSyncService {
 
         boolean trackSoftware = host.isComponentTracked("SOFTWARE");
 
-        if (!isFirstSync && trackSoftware) {
+        if (!isFirstSync && trackSoftware && !existingSoftware.isEmpty()) {
             // Загружаем исключения ПО из отслеживания
             Set<String> globalExclusions = exclusionRepository.findByHostIsNull().stream()
                     .map(SoftwareExclusion::getSoftwareName).collect(Collectors.toSet());
@@ -514,28 +514,54 @@ public class AspiaSyncService {
             Map<String, SoftwareInfo> newMap = newSoftware.stream()
                     .collect(Collectors.toMap(SoftwareInfo::getKey, s -> s, (a, b) -> a));
 
-            // Найти удалённое ПО
+            // Собираем удалённое и добавленное ПО по имени для определения обновлений
+            Map<String, HostSoftware> removedByName = new HashMap<>();
+            Map<String, SoftwareInfo> addedByName = new HashMap<>();
             for (Map.Entry<String, HostSoftware> entry : existingMap.entrySet()) {
                 if (!newMap.containsKey(entry.getKey())) {
-                    HostSoftware removed = entry.getValue();
-                    if (globalExclusions.contains(removed.getName()) || hostExclusions.contains(removed.getName())) continue;
-                    ComponentChange change = changeRepository.save(new ComponentChange(host, "SOFTWARE", "REMOVED",
-                            removed.getName() + " " + (removed.getVersion() != null ? removed.getVersion() : ""), ""));
-                    softwareChanges.add(change);
-                    log.info("ПО удалено на {}: {} {}", host.getComputerName(), removed.getName(), removed.getVersion());
+                    removedByName.put(entry.getValue().getName(), entry.getValue());
                 }
             }
-
-            // Найти добавленное ПО
             for (Map.Entry<String, SoftwareInfo> entry : newMap.entrySet()) {
                 if (!existingMap.containsKey(entry.getKey())) {
-                    SoftwareInfo added = entry.getValue();
-                    if (globalExclusions.contains(added.name) || hostExclusions.contains(added.name)) continue;
-                    ComponentChange change = changeRepository.save(new ComponentChange(host, "SOFTWARE", "ADDED",
-                            "", added.name + " " + (added.version != null ? added.version : "")));
-                    softwareChanges.add(change);
-                    log.info("ПО добавлено на {}: {} {}", host.getComputerName(), added.name, added.version);
+                    addedByName.put(entry.getValue().name, entry.getValue());
                 }
+            }
+            // Обновления = имена, которые есть и в удалённых, и в добавленных (сменилась версия)
+            Set<String> updatedNames = new HashSet<>(removedByName.keySet());
+            updatedNames.retainAll(addedByName.keySet());
+
+            // Записываем обновления ПО (одна запись UPDATED, без уведомления)
+            for (String name : updatedNames) {
+                if (globalExclusions.contains(name) || hostExclusions.contains(name)) continue;
+                HostSoftware old = removedByName.get(name);
+                SoftwareInfo upd = addedByName.get(name);
+                String oldVal = name + " " + (old.getVersion() != null ? old.getVersion() : "");
+                String newVal = name + " " + (upd.version != null ? upd.version : "");
+                changeRepository.save(new ComponentChange(host, "SOFTWARE", "UPDATED", oldVal, newVal));
+                log.info("ПО обновлено на {}: {} → {}", host.getComputerName(), oldVal, newVal);
+            }
+
+            // Найти действительно удалённое ПО (не обновления)
+            for (Map.Entry<String, HostSoftware> entry : removedByName.entrySet()) {
+                if (updatedNames.contains(entry.getKey())) continue;
+                HostSoftware removed = entry.getValue();
+                if (globalExclusions.contains(removed.getName()) || hostExclusions.contains(removed.getName())) continue;
+                ComponentChange change = changeRepository.save(new ComponentChange(host, "SOFTWARE", "REMOVED",
+                        removed.getName() + " " + (removed.getVersion() != null ? removed.getVersion() : ""), ""));
+                softwareChanges.add(change);
+                log.info("ПО удалено на {}: {} {}", host.getComputerName(), removed.getName(), removed.getVersion());
+            }
+
+            // Найти действительно добавленное ПО (не обновления)
+            for (Map.Entry<String, SoftwareInfo> entry : addedByName.entrySet()) {
+                if (updatedNames.contains(entry.getKey())) continue;
+                SoftwareInfo added = entry.getValue();
+                if (globalExclusions.contains(added.name) || hostExclusions.contains(added.name)) continue;
+                ComponentChange change = changeRepository.save(new ComponentChange(host, "SOFTWARE", "ADDED",
+                        "", added.name + " " + (added.version != null ? added.version : "")));
+                softwareChanges.add(change);
+                log.info("ПО добавлено на {}: {} {}", host.getComputerName(), added.name, added.version);
             }
         }
 

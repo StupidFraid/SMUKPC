@@ -613,8 +613,8 @@
                                     </td>
                                     <td>
                                         <span class="badge"
-                                              th:classappend="${change.changeType == 'ADDED' ? 'bg-success' : (change.changeType == 'REMOVED' ? 'bg-danger' : 'bg-warning text-dark')}"
-                                              th:text="${change.changeType == 'ADDED' ? 'Добавлено' : (change.changeType == 'REMOVED' ? 'Удалено' : 'Изменено')}">Тип</span>
+                                              th:classappend="${change.changeType == 'ADDED' ? 'bg-success' : (change.changeType == 'REMOVED' ? 'bg-danger' : (change.changeType == 'UPDATED' ? 'bg-info text-dark' : 'bg-warning text-dark'))}"
+                                              th:text="${change.changeType == 'ADDED' ? 'Добавлено' : (change.changeType == 'REMOVED' ? 'Удалено' : (change.changeType == 'UPDATED' ? 'Обновлено' : 'Изменено'))}">Тип</span>
                                     </td>
                                     <td class="small" th:text="${change.oldValue ?: '—'}">—</td>
                                     <td class="small" th:text="${change.newValue ?: '—'}">—</td>

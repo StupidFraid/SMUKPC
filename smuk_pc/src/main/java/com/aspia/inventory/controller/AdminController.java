@@ -1,9 +1,11 @@
 package com.aspia.inventory.controller;
 
 import com.aspia.inventory.model.AppUser;
+import com.aspia.inventory.model.Host;
 import com.aspia.inventory.model.HostGroup;
 import com.aspia.inventory.repository.AppUserRepository;
 import com.aspia.inventory.repository.HostGroupRepository;
+import com.aspia.inventory.repository.HostRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -18,13 +20,16 @@ public class AdminController {
 
     private final AppUserRepository userRepository;
     private final HostGroupRepository groupRepository;
+    private final HostRepository hostRepository;
     private final PasswordEncoder passwordEncoder;
 
     public AdminController(AppUserRepository userRepository,
                            HostGroupRepository groupRepository,
+                           HostRepository hostRepository,
                            PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
+        this.hostRepository = hostRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -121,8 +126,17 @@ public class AdminController {
     }
 
     @PostMapping("/admin/groups/{id}/delete")
+    @org.springframework.transaction.annotation.Transactional
     public String deleteGroup(@PathVariable Long id) {
-        groupRepository.deleteById(id);
+        HostGroup group = groupRepository.findById(id).orElse(null);
+        if (group != null) {
+            for (Host host : hostRepository.findAll()) {
+                if (host.getGroups().remove(group)) {
+                    hostRepository.save(host);
+                }
+            }
+            groupRepository.delete(group);
+        }
         return "redirect:/admin";
     }
 }

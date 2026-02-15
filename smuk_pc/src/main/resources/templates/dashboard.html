@@ -162,7 +162,8 @@
                             <div class="timeline-marker me-3">
                                 <i class="bi bi-circle-fill"
                                    th:classappend="${change.changeType == 'ADDED' ? 'text-success' :
-                                                   (change.changeType == 'REMOVED' ? 'text-danger' : 'text-warning')}"></i>
+                                                   (change.changeType == 'REMOVED' ? 'text-danger' :
+                                                   (change.changeType == 'UPDATED' ? 'text-info' : 'text-warning'))}"></i>
                             </div>
 
                             <!-- Change Details -->
@@ -192,7 +193,8 @@
                                             <!-- Change Type Badge -->
                                             <span class="badge"
                                                   th:classappend="${change.changeType == 'ADDED' ? 'bg-success' :
-                                                                   (change.changeType == 'REMOVED' ? 'bg-danger' : 'bg-warning')}"
+                                                                   (change.changeType == 'REMOVED' ? 'bg-danger' :
+                                                                   (change.changeType == 'UPDATED' ? 'bg-info' : 'bg-warning'))}"
                                                   th:text="${change.changeType}">MODIFIED</span>
 
                                         </h6>
@@ -250,6 +252,7 @@
             switch(type) {
                 case 'ADDED': return 'bg-success';
                 case 'REMOVED': return 'bg-danger';
+                case 'UPDATED': return 'bg-info';
                 default: return 'bg-warning';
             }
         }
@@ -258,6 +261,7 @@
             switch(type) {
                 case 'ADDED': return 'text-success';
                 case 'REMOVED': return 'text-danger';
+                case 'UPDATED': return 'text-info';
                 default: return 'text-warning';
             }
         }

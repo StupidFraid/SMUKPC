@@ -65,6 +65,7 @@
                                 <option value="">Все</option>
                                 <option value="ADDED">Добавлено</option>
                                 <option value="MODIFIED">Изменено</option>
+                                <option value="UPDATED">Обновлено</option>
                                 <option value="REMOVED">Удалено</option>
                             </select>
                         </div>
@@ -142,9 +143,11 @@
                             <td>
                                 <span class="badge"
                                       th:classappend="${event.changeType == 'ADDED' ? 'bg-success' :
-                                                       (event.changeType == 'REMOVED' ? 'bg-danger' : 'bg-warning text-dark')}"
+                                                       (event.changeType == 'REMOVED' ? 'bg-danger' :
+                                                       (event.changeType == 'UPDATED' ? 'bg-info text-dark' : 'bg-warning text-dark'))}"
                                       th:text="${event.changeType == 'ADDED' ? 'Добавлено' :
-                                               (event.changeType == 'REMOVED' ? 'Удалено' : 'Изменено')}">Тип</span>
+                                               (event.changeType == 'REMOVED' ? 'Удалено' :
+                                               (event.changeType == 'UPDATED' ? 'Обновлено' : 'Изменено'))}">Тип</span>
                             </td>
                             <td class="small text-muted" th:text="${event.oldValue ?: '—'}">—</td>
                             <td class="small fw-bold" th:text="${event.newValue ?: '—'}">—</td>
